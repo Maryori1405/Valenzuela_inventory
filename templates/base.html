@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Market Valenzuela{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+    <style>
+        body {
+            font-family: 'Trebuchet MS', sans-serif;
+        }
+        :root {
+            --bg: #fdfcf9;
+            --primary: #2a6f75;   /* Azul mar mediterráneo */
+            --accent: #e07a5f;    /* Terracota */
+            --soft: #f4ede4;      /* Beige claro */
+            --shadow: rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+
+<body class="bg-[var(--bg)] text-gray-800 antialiased">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white shadow-md px-6 py-8 border-r border-[var(--soft)] flex flex-col gap-6">
+            <h1 class="text-2xl font-bold text-[var(--primary)] tracking-wide flex items-center gap-2">
+                <i data-lucide="store" class="text-[var(--accent)] w-6 h-6"></i> Market Valenzuela
+            </h1>
+            <nav class="flex flex-col gap-4 text-[17px]">
+                <a href="{{ url_for('inicio') }}"
+                   class="flex items-center gap-2 transition hover:text-[var(--accent)] {% if request.endpoint == 'inicio' %}text-[var(--accent)] font-semibold{% endif %}">
+                    <i data-lucide="bar-chart-2" class="w-5 h-5"></i> Inicio
+                </a>
+                <a href="{{ url_for('productos') }}"
+                   class="flex items-center gap-2 transition hover:text-[var(--accent)] {% if request.endpoint == 'productos' %}text-[var(--accent)] font-semibold{% endif %}">
+                    <i data-lucide="boxes" class="w-5 h-5"></i> Productos
+                </a>
+                <a href="{{ url_for('agregar_producto') }}"
+                   class="flex items-center gap-2 transition hover:text-[var(--accent)] {% if request.endpoint == 'agregar_producto' %}text-[var(--accent)] font-semibold{% endif %}">
+                    <i data-lucide="plus-circle" class="w-5 h-5"></i> Agregar
+                </a>
+                <a href="{{ url_for('consultar_productos') }}"
+                   class="flex items-center gap-2 transition hover:text-[var(--accent)] {% if request.endpoint == 'consultar_productos' %}text-[var(--accent)] font-semibold{% endif %}">
+                    <i data-lucide="search" class="w-5 h-5"></i> Consultar
+                </a>
+                <a href="{{ url_for('notificaciones') }}"
+                   class="relative flex items-center gap-2 transition hover:text-[var(--accent)] {% if request.endpoint == 'notificaciones' %}text-[var(--accent)] font-semibold{% endif %}">
+                    <i data-lucide="bell" class="w-5 h-5"></i> Notificaciones
+                    {% if cantidad_no_leidas > 0 %}
+                    <span class="absolute -top-2 left-5 bg-[var(--accent)] text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-md">
+                        {{ cantidad_no_leidas }}
+                    </span>
+                    {% endif %}
+                </a>
+                <a href="{{ url_for('historial') }}"
+                   class="flex items-center gap-2 transition hover:text-[var(--accent)] {% if request.endpoint == 'historial' %}text-[var(--accent)] font-semibold{% endif %}">
+                    <i data-lucide="clock" class="w-5 h-5"></i> Historial
+                </a>
+                <a href="{{ url_for('prediccion') }}"
+                   class="flex items-center gap-2 transition hover:text-[var(--accent)] {% if request.endpoint == 'prediccion' %}text-[var(--accent)] font-semibold{% endif %}">
+                    <i data-lucide="activity" class="w-5 h-5"></i> Predicciones
+                </a>
+                
+                <a href="{{ url_for('logout') }}"
+                   class="transition hover:text-[var(--accent)]">
+                   <i data-lucide="log-out" class="inline w-5 h-5 mr-1"></i> Cerrar Sesión
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Contenido principal -->
+        <main class="flex-1 p-10 bg-[var(--bg)]">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-6 p-4 border-l-4 rounded-md shadow-sm
+                            {{ 'bg-green-50 border-green-400 text-green-900' if category == 'success' else 'bg-red-50 border-red-400 text-red-900' }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Consultar Productos{% endblock %}
+
+{% block content %}
+<h2 class="text-3xl font-semibold mb-6">Consultar Productos</h2>
+
+<form method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white shadow rounded-xl p-6 mb-8 border border-[var(--soft)]">
+  <div>
+    <label for="criterio" class="block text-[var(--text)] font-medium mb-2">Criterio</label>
+    <select id="criterio" name="criterio" 
+      class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]">
+      <option value="nombre">Nombre</option>
+      <option value="estado">Estado</option>
+      <option value="categoria">Categoría</option> <!-- Nueva opción -->
+    </select>
+  </div>
+
+  <div>
+    <label for="valor" class="block text-[var(--text)] font-medium mb-2">Valor</label>
+    <input type="text" id="valor" name="valor"
+      class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+      placeholder="Ej: arroz, crítico o alimentos" required>
+  </div>
+
+  <div class="flex items-end">
+    <button type="submit"
+      class="flex items-center gap-2 bg-[var(--primary)] text-white font-semibold py-2 px-4 rounded-lg hover:bg-[var(--accent)] transition">
+      <i data-lucide="search" class="w-5 h-5"></i>
+      Buscar
+    </button>
+  </div>
+</form>
+
+{% if productos is not none %}
+<div class="overflow-x-auto">
+  <table class="min-w-full bg-white border border-[var(--soft)] rounded-xl overflow-hidden shadow-md text-sm">
+    <thead class="bg-[var(--primary)] text-white">
+      <tr>
+        <th class="py-3 px-4 text-left">ID</th>
+        <th class="py-3 px-4 text-left">Nombre</th>
+        <th class="py-3 px-4 text-left">Categoría</th> <!-- Nueva columna -->
+        <th class="py-3 px-4 text-left">Stock Actual</th>
+        <th class="py-3 px-4 text-left">Stock Óptimo</th>
+        <th class="py-3 px-4 text-left">Stock Máximo</th>
+        <th class="py-3 px-4 text-left">Estado</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-[var(--soft)] bg-[var(--bg)]">
+      {% for p in productos %}
+      <tr class="hover:bg-white transition">
+        <td class="py-3 px-4">{{ p.id }}</td>
+        <td class="py-3 px-4">{{ p.nombre }}</td>
+        <td class="py-3 px-4">{{ p.categoria }}</td> 
+        <td class="py-3 px-4">{{ p.stock_actual }}</td>
+        <td class="py-3 px-4">{{ p.stock_optimo }}</td>
+        <td class="py-3 px-4">{{ p.stock_maximo }}</td>
+        <td class="py-3 px-4">
+          <span class="inline-block px-2 py-1 text-xs rounded-full
+            {% if p.estado == 'Crítico' %}bg-red-100 text-red-700
+            {% elif p.estado == 'Regular' %}bg-yellow-100 text-yellow-700
+            {% elif p.estado == 'Óptimo' %}bg-green-100 text-green-700
+            {% elif p.estado == 'Exceso' %}bg-blue-100 text-blue-700
+            {% else %}bg-gray-100 text-gray-700{% endif %}">
+            {{ p.estado }}
+          </span>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="text-center py-6 text-gray-500">No hay productos que mostrar</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

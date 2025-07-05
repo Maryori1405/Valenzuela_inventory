@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista de Productos{% endblock %}
+
+{% block content %}
+<h2 class="text-3xl font-semibold mb-6">Productos en Inventario</h2>
+
+<div class="overflow-x-auto">
+  <table class="min-w-full bg-white border border-[var(--soft)] rounded-xl overflow-hidden shadow-md text-sm">
+    <thead class="bg-[var(--primary)] text-white text-left">
+        <tr class="text-center">
+            <th class="px-4 py-3">ID</th>
+            <th class="px-4 py-3">Nombre</th>
+            <th class="px-4 py-3">Categoría</th>  
+            <th class="px-4 py-3">Stock Actual</th>
+            <th class="px-4 py-3">Stock Óptimo</th>
+            <th class="px-4 py-3">Stock Máximo</th>
+            <th class="px-4 py-3">Estado</th>
+            <th class="px-4 py-3">Acciones</th>
+        </tr>
+    </thead>
+    <tbody class="divide-y divide-[var(--soft)] bg-[var(--bg)]">
+        {% for producto in productos %}
+        <tr class="text-center hover:bg-white transition text-gray-700">
+            <td class="px-4 py-3">{{ producto.id }}</td>
+            <td class="px-4 py-3">{{ producto.nombre }}</td>
+            <td class="px-4 py-3">{{ producto.categoria }}</td>  
+            <td class="px-4 py-3">{{ producto.stock_actual }}</td>
+            <td class="px-4 py-3">{{ producto.stock_optimo }}</td>
+            <td class="px-4 py-3">{{ producto.stock_maximo }}</td>
+            <td class="px-4 py-3 font-semibold">
+                <span class="inline-block px-3 py-1 text-sm rounded-full
+            {% if producto.estado == 'Crítico' %}bg-red-100 text-red-700
+            {% elif producto.estado == 'Regular' %}bg-yellow-100 text-yellow-700
+            {% elif producto.estado == 'Óptimo' %}bg-green-100 text-green-700
+            {% elif producto.estado == 'Exceso' %}bg-blue-100 text-blue-700
+            {% else %}bg-gray-100 text-gray-700{% endif %}">{{ producto.estado }}</span>
+            </td>
+            <td class="px-3 py-3 space-y-2 flex flex-col items-center">
+    <a href="{{ url_for('editar', id=producto.id) }}" 
+       class="inline-block bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded shadow transition duration-200" 
+       title="Editar">
+       <i data-lucide="edit" class="w-4 h-4"></i>
+    </a>
+
+    <a href="{{ url_for('registrar_entrada', id=producto.id) }}"
+       class="inline-block bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded shadow transition duration-200"
+       title="Registrar entrada">
+       <i data-lucide="arrow-up-circle" class="w-4 h-4 inline-block mr-1"></i> Entrada
+    </a>
+
+    <a href="{{ url_for('registrar_salida', id=producto.id) }}"
+       class="inline-block bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded shadow transition duration-200"
+       title="Registrar salida">
+       <i data-lucide="arrow-down-circle" class="w-4 h-4 inline-block mr-1"></i> Salida
+    </a>
+
+    <a href="{{ url_for('prediccion', producto_id=producto.id) }}" 
+       class="inline-block bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded shadow transition duration-200" 
+       title="Predecir consumo">
+       <i data-lucide="trending-up" class="w-4 h-4 inline-block mr-1"></i> Predecir
+    </a>
+
+    <form action="{{ url_for('eliminar', id=producto.id) }}" method="POST" onsubmit="return confirm('¿Seguro que quieres eliminar este producto?');">
+        <button type="submit" 
+            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded shadow transition duration-200"
+            title="Eliminar">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+    </form>
+</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="8" class="text-center py-4 text-gray-500">No hay productos registrados.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="flex justify-between pt-4">
+    <a href="{{ url_for('agregar_producto') }}"
+       class="flex items-center gap-2 bg-[var(--primary)] hover:bg-[var(--accent)] text-white font-semibold px-6 py-2 rounded-lg shadow-sm transition">
+        <i data-lucide="plus-circle" class="w-5 h-5"></i>
+        Agregar Nuevo Producto
+    </a>
+</div>
+
+{% endblock %}

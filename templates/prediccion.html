@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Predicción de Consumo{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto bg-white shadow-md rounded-2xl p-8">
+    <h2 class="text-3xl font-semibold text-gray-800 mb-6">
+        Predicción de Consumo de Todos los Productos
+    </h2>
+
+    <!-- 📊 Gráfico general -->
+    {% if grafico_general %}
+    <div class="mb-10">
+        <h3 class="text-xl font-bold text-[var(--primary)] mb-4">📊 Comparación General</h3>
+        <img src="data:image/png;base64,{{ grafico_general }}" alt="Gráfico general" class="w-full rounded-xl border shadow">
+    </div>
+    {% endif %}
+
+    <!-- 🔎 Predicciones individuales -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for r in resultados %}
+        <div class="bg-[var(--bg)] border border-gray-200 p-6 rounded-xl shadow">
+            <h3 class="text-xl font-bold text-[var(--primary)] mb-3">{{ r.producto.nombre }}</h3>
+            <p><strong>📦 Stock actual:</strong> {{ r.producto.stock_actual }}</p>
+            <p><strong>📈 Predicción:</strong>
+                {% if r.prediccion is not none %}
+                    {{ r.prediccion | round(2) }} unidades
+                {% else %}
+                    <span class="text-gray-500 italic">No hay datos suficientes</span>
+                {% endif %}
+            </p>
+            <p><strong>🧠 Recomendación:</strong>
+                {% if r.prediccion is not none %}
+                    {% if r.prediccion > r.producto.stock_actual %}
+                        ⚠️ Reabastecer
+                    {% else %}
+                        ✅ Stock suficiente
+                    {% endif %}
+                {% else %}
+                    <span class="text-gray-400">N/A</span>
+                {% endif %}
+            </p>
+
+            {% if r.grafico %}
+            <div class="mt-4">
+                <img src="data:image/png;base64,{{ r.grafico }}" alt="Gráfico de predicción" class="rounded-xl border border-gray-200 shadow-sm">
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="mt-8 text-center">
+        <a href="{{ url_for('productos') }}"
+           class="inline-block bg-[var(--primary)] hover:bg-[var(--accent)] text-white font-semibold px-6 py-2 rounded-xl shadow transition-all">
+           ← Volver a Productos
+        </a>
+    </div>
+</div>
+{% endblock %}

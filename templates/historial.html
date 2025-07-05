@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Historial de Movimientos{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto bg-white shadow-md rounded-xl p-8">
+    <h2 class="text-2xl font-semibold text-[var(--primary)] mb-6">Historial de Movimientos</h2>
+
+    <!-- Formulario de filtros -->
+    <form method="GET" class="flex flex-wrap items-end gap-4 mb-6">
+        <div class="flex flex-col">
+            <label for="tipo" class="text-sm font-medium text-gray-700">Tipo de Movimiento</label>
+            <select name="tipo" id="tipo" class="border border-gray-300 rounded px-3 py-2 text-sm">
+                <option value="">Todos</option>
+                <option value="entrada" {% if request.args.get('tipo') == 'entrada' %}selected{% endif %}>Entrada</option>
+                <option value="salida" {% if request.args.get('tipo') == 'salida' %}selected{% endif %}>Salida</option>
+            </select>
+        </div>
+
+        <div class="flex flex-col">
+            <label for="desde" class="text-sm font-medium text-gray-700">Desde</label>
+            <input type="date" name="desde" id="desde" value="{{ request.args.get('desde', '') }}"
+                   class="border border-gray-300 rounded px-3 py-2 text-sm">
+        </div>
+
+        <div class="flex flex-col">
+            <label for="hasta" class="text-sm font-medium text-gray-700">Hasta</label>
+            <input type="date" name="hasta" id="hasta" value="{{ request.args.get('hasta', '') }}"
+                   class="border border-gray-300 rounded px-3 py-2 text-sm">
+        </div>
+
+        <button type="submit"
+                class="bg-[var(--primary)] hover:bg-[var(--accent)] text-white px-5 py-2 rounded shadow text-sm font-semibold transition">
+            Filtrar
+        </button>
+    </form>
+
+    <!-- Tabla de resultados -->
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border border-[var(--soft)] rounded overflow-hidden shadow text-sm">
+            <thead class="bg-[var(--primary)] text-white text-left">
+                <tr class="text-center">
+                    <th class="px-4 py-3">ID</th>
+                    <th class="px-4 py-3">Producto</th>
+                    <th class="px-4 py-3">Tipo de Movimiento</th>
+                    <th class="px-4 py-3">Cantidad</th>
+                    <th class="px-4 py-3">Fecha y Hora</th>
+                    <th class="px-4 py-3">Usuario</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--soft)] text-center text-gray-700">
+                {% for movimiento in movimientos %}
+                <tr class="hover:bg-[var(--soft)] transition">
+                    <td class="px-4 py-2">{{ movimiento.id }}</td>
+                    <td class="px-4 py-2">{{ movimiento.nombre_producto }}</td>
+                    <td class="px-4 py-2 capitalize">{{ movimiento.tipo_movimiento }}</td>
+                    <td class="px-4 py-2">{{ movimiento.cantidad }}</td>
+                    <td class="px-4 py-2">{{ movimiento.fecha_hora.strftime('%d-%m-%Y %H:%M:%S') }}</td>
+                    <td class="px-4 py-2">{{ movimiento.usuario or 'N/A' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-4 py-4 text-center text-gray-500">No hay movimientos registrados.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
