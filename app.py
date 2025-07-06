@@ -2,47 +2,60 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_mysqldb import MySQL
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from MySQLdb.cursors import DictCursor
 from datetime import datetime, timedelta
 from sklearn.linear_model import LinearRegression
-import io
-import base64
-import numpy as np
-import matplotlib
-matplotlib.use('Agg')  
+import io, base64, unicodedata, matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 
+# Usar backend sin GUI para matplotlib (útil en Railway)
+matplotlib.use('Agg')
 
+# Inicialización de la app
 app = Flask(__name__)
-app.secret_key = 'tu_clave_secreta'
+app.secret_key = 'tu_clave_secreta'  # ⚠️ Considera usar variables de entorno para mayor seguridad
 
-# Configuración MySQL
-app.config['MYSQL_HOST'] = 'localhost'
+# Configuración MySQL para Railway
+app.config['MYSQL_HOST'] = 'yamanote.proxy.rlwy.net'
+app.config['MYSQL_PORT'] = 28413
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = ''
-app.config['MYSQL_DB'] = 'inventario_db'
+app.config['MYSQL_PASSWORD'] = 'izrghvAsXGqdEqMbBuvUwUfGyAYlsARN'
+app.config['MYSQL_DB'] = 'railway'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
+# Inicializar extensiones
 mysql = MySQL(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'login'  # Redireccionará aquí si no estás autenticado
 
+# Modelo de usuario para Flask-Login
 class Usuario(UserMixin):
     def __init__(self, id, username, password_hash):
         self.id = id
         self.username = username
         self.password_hash = password_hash
 
+# Cargar usuario desde la base de datos
 @login_manager.user_loader
 def load_user(user_id):
     cur = mysql.connection.cursor()
-    cur.execute("SELECT id, username, password_hash FROM usuarios WHERE id = %s", (user_id,))
-    data = cur.fetchone()
+    cur.execute("SELECT * FROM usuarios WHERE id = %s", (user_id,))
+    usuario = cur.fetchone()
     cur.close()
-    if data:
-        return Usuario(data['id'], data['username'], data['password_hash'])
+    if usuario:
+        return Usuario(id=usuario['id'], username=usuario['username'], password_hash=usuario['password'])
     return None
+
+# Ruta de prueba
+@app.route('/')
+def home():
+    return "✅ App Flask conectada a Railway con éxito."
+
+# Punto de entrada
+if __name__ == '__main__':
+    app.run(debug=True)
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -98,15 +111,20 @@ def calcular_estado(stock_actual, stock_optimo, stock_maximo):
 
 @app.context_processor
 def inject_cantidad_no_leidas():
-    cur = mysql.connection.cursor()
-    cur.execute("""
-        SELECT COUNT(*) AS total FROM productos 
-        WHERE stock_actual < stock_optimo OR stock_actual > stock_maximo
-    """)
-    result = cur.fetchone()
-    cur.close()
-    cantidad_no_leidas = result['total'] if result else 0
-    return dict(cantidad_no_leidas=cantidad_no_leidas)
+    try:
+        # Usar DictCursor para poder acceder por nombre de columna
+        cur = mysql.connection.cursor()
+        cur.execute("""
+            SELECT COUNT(*) AS total FROM productos 
+            WHERE stock_actual < stock_optimo OR stock_actual > stock_maximo
+        """)
+        result = cur.fetchone()
+        cur.close()
+        cantidad_no_leidas = result['total'] if result else 0
+        return dict(cantidad_no_leidas=cantidad_no_leidas)
+    except Exception as e:
+        print(f"Error en inject_cantidad_no_leidas: {e}")
+        return dict(cantidad_no_leidas=0)
 
 @app.route('/')
 @login_required
@@ -153,34 +171,42 @@ def inicio():
 @login_required
 def agregar_producto():
     if request.method == 'POST':
-        nombre = request.form['nombre']
-        categoria = request.form['categoria']
-        stock_actual = int(request.form['stock_actual'])
-        stock_optimo = int(request.form['stock_optimo'])
-        stock_maximo = int(request.form['stock_maximo'])
+        try:
+            nombre = request.form['nombre']
+            categoria = request.form['categoria']
+            stock_actual = int(request.form['stock_actual'])
+            stock_optimo = int(request.form['stock_optimo'])
+            stock_maximo = int(request.form['stock_maximo'])
 
-        cur = mysql.connection.cursor()
-        
-        # Insertar producto en la tabla
-        cur.execute("""
-            INSERT INTO productos (nombre, categoria, stock_actual, stock_optimo, stock_maximo)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (nombre, categoria, stock_actual, stock_optimo, stock_maximo))
-        mysql.connection.commit()
-
-        # Obtener el ID del producto recién insertado
-        producto_id = cur.lastrowid
-
-        # Registrar movimiento de entrada si el stock_actual > 0
-        if stock_actual > 0:
+            cur = mysql.connection.cursor()
+            
+            # Insertar producto en la tabla INCLUYENDO usuario_id
             cur.execute("""
-                INSERT INTO historial_movimientos (producto_id, tipo_movimiento, cantidad, fecha_hora)
-                VALUES (%s, 'entrada', %s, NOW())
-            """, (producto_id, stock_actual))
+                INSERT INTO productos (nombre, categoria, stock_actual, stock_optimo, stock_maximo, usuario_id)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (nombre, categoria, stock_actual, stock_optimo, stock_maximo, current_user.id))
             mysql.connection.commit()
 
-        flash('✅ Producto agregado correctamente', 'success')
-        return redirect(url_for('productos'))
+            # Obtener el ID del producto recién insertado
+            producto_id = cur.lastrowid
+
+            # Registrar movimiento de entrada si el stock_actual > 0
+            if stock_actual > 0:
+                cur.execute("""
+                    INSERT INTO historial_movimientos (producto_id, tipo_movimiento, cantidad, fecha_hora)
+                    VALUES (%s, 'entrada', %s, NOW())
+                """, (producto_id, stock_actual))
+                mysql.connection.commit()
+
+            cur.close()
+            flash('✅ Producto agregado correctamente', 'success')
+            return redirect(url_for('productos'))
+            
+        except Exception as e:
+            mysql.connection.rollback()
+            flash(f'❌ Error al agregar producto: {str(e)}', 'error')
+            print(f"Error: {e}")  # Para debugging
+            return render_template('agregar_producto.html')
 
     return render_template('agregar_producto.html')
 
@@ -194,32 +220,41 @@ def consultar_productos():
         cur = mysql.connection.cursor(DictCursor)
 
         if criterio == 'nombre':
-            cur.execute("""SELECT *, CASE
-                WHEN stock_actual < stock_optimo * 0.5 THEN 'Crítico'
-                WHEN stock_actual < stock_optimo THEN 'Regular'
-                WHEN stock_actual <= stock_maximo THEN 'Óptimo'
-                ELSE 'Exceso' END AS estado
-                FROM productos WHERE nombre LIKE %s
+            cur.execute("""
+                SELECT *, CASE
+                    WHEN stock_actual < stock_optimo * 0.5 THEN 'Crítico'
+                    WHEN stock_actual < stock_optimo THEN 'Regular'
+                    WHEN stock_actual <= stock_maximo THEN 'Óptimo'
+                    ELSE 'Exceso' END AS estado
+                FROM productos 
+                WHERE nombre COLLATE utf8mb4_general_ci LIKE %s
             """, ('%' + valor + '%',))
             productos = cur.fetchall()
 
         elif criterio == 'estado':
-            cur.execute("""SELECT *, CASE
-                WHEN stock_actual < stock_optimo * 0.5 THEN 'Crítico'
-                WHEN stock_actual < stock_optimo THEN 'Regular'
-                WHEN stock_actual <= stock_maximo THEN 'Óptimo'
-                ELSE 'Exceso' END AS estado
-                FROM productos""")
+            cur.execute("""
+                SELECT *, CASE
+                    WHEN stock_actual < stock_optimo * 0.5 THEN 'Crítico'
+                    WHEN stock_actual < stock_optimo THEN 'Regular'
+                    WHEN stock_actual <= stock_maximo THEN 'Óptimo'
+                    ELSE 'Exceso' END AS estado
+                FROM productos
+            """)
             todos = cur.fetchall()
-            productos = [p for p in todos if p['estado'].lower() == valor.lower()]
+            def normalizar(texto):
+                return unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('utf-8').lower()
+            valor_normalizado = normalizar(valor)
+            productos = [p for p in todos if normalizar(p['estado']) == valor_normalizado]
 
         elif criterio == 'categoria':
-            cur.execute("""SELECT *, CASE
-                WHEN stock_actual < stock_optimo * 0.5 THEN 'Crítico'
-                WHEN stock_actual < stock_optimo THEN 'Regular'
-                WHEN stock_actual <= stock_maximo THEN 'Óptimo'
-                ELSE 'Exceso' END AS estado
-                FROM productos WHERE categoria LIKE %s
+            cur.execute("""
+                SELECT *, CASE
+                    WHEN stock_actual < stock_optimo * 0.5 THEN 'Crítico'
+                    WHEN stock_actual < stock_optimo THEN 'Regular'
+                    WHEN stock_actual <= stock_maximo THEN 'Óptimo'
+                    ELSE 'Exceso' END AS estado
+                FROM productos 
+                WHERE categoria COLLATE utf8mb4_general_ci LIKE %s
             """, ('%' + valor + '%',))
             productos = cur.fetchall()
 
@@ -566,45 +601,71 @@ def registrar_entrada(id):
 
 @app.context_processor
 def inject_cantidad_no_leidas():
-    cur = mysql.connection.cursor(DictCursor)
+    try:
+        cur = mysql.connection.cursor()
 
-    # Notificaciones por stock crítico o exceso
-    cur.execute("""
-        SELECT COUNT(*) AS total FROM productos 
-        WHERE stock_actual < stock_optimo OR stock_actual > stock_maximo
-    """)
-    notificaciones = cur.fetchone()
-
-    # Alerta por predicciones de agotamiento
-    cur.execute("SELECT id, stock_actual FROM productos")
-    productos = cur.fetchall()
-
-    alerta_prediccion = 0
-    for p in productos:
+        # Notificaciones por stock crítico o exceso
         cur.execute("""
-            SELECT SUM(cantidad) AS total_vendido
-            FROM historial_movimientos
-            WHERE producto_id = %s AND tipo_movimiento = 'salida'
-            GROUP BY DATE(fecha_hora)
-            ORDER BY DATE(fecha_hora) DESC
-            LIMIT 7
-        """, (p['id'],))
-        ventas = cur.fetchall()
+            SELECT COUNT(*) AS total FROM productos 
+            WHERE stock_actual < stock_optimo OR stock_actual > stock_maximo
+        """)
+        notificaciones = cur.fetchone()
 
-        if len(ventas) >= 2:
-            dias = np.array(list(range(1, len(ventas)+1))).reshape(-1, 1)
-            unidades = np.array([v['total_vendido'] for v in ventas])
-            modelo = LinearRegression()
-            modelo.fit(dias, unidades)
-            pred = modelo.predict([[len(dias)+1]])[0]
-            if pred > p['stock_actual']:
-                alerta_prediccion += 1
+        # Obtener todas las ventas de los últimos 7 días en una sola consulta
+        cur.execute("""
+            SELECT 
+                p.id,
+                p.stock_actual,
+                DATE(hm.fecha_hora) as fecha,
+                SUM(hm.cantidad) as total_vendido
+            FROM productos p
+            LEFT JOIN historial_movimientos hm ON p.id = hm.producto_id
+            WHERE hm.tipo_movimiento = 'salida' 
+              AND hm.fecha_hora >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            GROUP BY p.id, DATE(hm.fecha_hora)
+            ORDER BY p.id, DATE(hm.fecha_hora) DESC
+        """)
+        ventas_data = cur.fetchall()
 
-    cur.close()
-    return dict(
-        cantidad_no_leidas=notificaciones['total'],
-        cantidad_alerta_pred=alerta_prediccion
-    )
+        # Agrupar por producto
+        productos_ventas = {}
+        for row in ventas_data:
+            if row['id'] not in productos_ventas:
+                productos_ventas[row['id']] = {
+                    'stock_actual': row['stock_actual'],
+                    'ventas': []
+                }
+            if row['total_vendido'] is not None:
+                productos_ventas[row['id']]['ventas'].append(row['total_vendido'])
+
+        alerta_prediccion = 0
+        for producto_id, data in productos_ventas.items():
+            ventas = data['ventas']
+            if len(ventas) >= 2:
+                try:
+                    dias = np.array(list(range(1, len(ventas)+1))).reshape(-1, 1)
+                    unidades = np.array(ventas)
+                    
+                    modelo = LinearRegression()
+                    modelo.fit(dias, unidades)
+                    pred = modelo.predict([[len(dias)+1]])[0]
+                    
+                    if pred > data['stock_actual']:
+                        alerta_prediccion += 1
+                except Exception as e:
+                    print(f"Error en predicción para producto {producto_id}: {e}")
+                    continue
+
+        cur.close()
+        
+        return dict(
+            cantidad_no_leidas=notificaciones['total'] if notificaciones else 0,
+            cantidad_alerta_pred=alerta_prediccion
+        )
+        
+    except Exception as e:
+        print(f"Error en inject_cantidad_no_leidas: {e}")
+        return dict(cantidad_no_leidas=0, cantidad_alerta_pred=0)
 
 # Ejecutar la aplicación
 if __name__ == '__main__':
