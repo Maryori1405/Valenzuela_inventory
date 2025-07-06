@@ -14,10 +14,8 @@ import os
 # Usar backend sin GUI para matplotlib (útil en servidores sin entorno gráfico)
 matplotlib.use('Agg')
 
-# Cargar variables de entorno si estamos en desarrollo
-if __name__ == '__main__':
-    
-    load_dotenv()
+# ✅ Cargar variables de entorno desde .env
+load_dotenv()
 
 # Inicialización de la app
 app = Flask(__name__)
@@ -43,6 +41,7 @@ class Usuario(UserMixin):
         self.id = id
         self.username = username
         self.password_hash = password_hash
+
 # Cargar usuario desde la base de datos
 @login_manager.user_loader
 def load_user(user_id):
@@ -53,16 +52,6 @@ def load_user(user_id):
     if usuario:
         return Usuario(id=usuario['id'], username=usuario['username'], password_hash=usuario['password'])
     return None
-
-# Ruta de prueba
-@app.route('/')
-def home():
-    return "✅ App Flask conectada a Railway con éxito."
-
-# Punto de entrada
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000)
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
