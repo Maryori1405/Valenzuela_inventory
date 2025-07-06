@@ -1,12 +1,11 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
-from flask_mysqldb import MySQL
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from datetime import datetime, timedelta
-from MySQLdb.cursors import DictCursor
 from sklearn.linear_model import LinearRegression
 import io, base64, unicodedata, matplotlib
 import matplotlib.pyplot as plt
+from MySQLdb.cursors import DictCursor
 from dotenv import load_dotenv
 from db import init_db, mysql
 import numpy as np
@@ -22,19 +21,10 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'clave_por_defecto_insegura')
 
-# Configuración de la base de datos MySQL (Railway o entorno local si aplica)
-app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST')
-app.config['MYSQL_PORT'] = int(os.getenv('MYSQL_PORT', 3306))
-app.config['MYSQL_USER'] = os.getenv('MYSQL_USER')
-app.config['MYSQL_PASSWORD'] = os.getenv('MYSQL_PASSWORD')
-app.config['MYSQL_DB'] = os.getenv('MYSQL_DB')
-app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
-
-# Inicializa MySQL
+# ✅ Inicializar la base de datos con configuración desde db.py
 init_db(app)
 
-# Inicializar extensiones
-mysql = MySQL(app)
+# ✅ Inicializar extensiones (NO inicialices de nuevo mysql aquí)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'  # Redirige al login si no está autenticado
