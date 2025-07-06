@@ -1,27 +1,33 @@
+import os
+from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_mysqldb import MySQL
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from datetime import datetime, timedelta
+from datetime import datetime
 from sklearn.linear_model import LinearRegression
 import io, base64, unicodedata, matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Usar backend sin GUI para matplotlib (útil en Railway)
+# Cargar variables del archivo .env
+load_dotenv()
+
+# Usar backend sin GUI para matplotlib (útil en servidores)
 matplotlib.use('Agg')
 
 # Inicialización de la app
 app = Flask(__name__)
-app.secret_key = 'tu_clave_secreta'  # ⚠️ Considera usar variables de entorno para mayor seguridad
+app.secret_key = os.getenv('SECRET_KEY')
 
-# Configuración MySQL para Railway
-app.config['MYSQL_HOST'] = 'yamanote.proxy.rlwy.net'
-app.config['MYSQL_PORT'] = 28413
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'izrghvAsXGqdEqMbBuvUwUfGyAYlsARN'
-app.config['MYSQL_DB'] = 'railway'
+# Configuración MySQL usando variables de entorno
+app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST')
+app.config['MYSQL_PORT'] = int(os.getenv('MYSQL_PORT'))  # convertimos a entero
+app.config['MYSQL_USER'] = os.getenv('MYSQL_USER')
+app.config['MYSQL_PASSWORD'] = os.getenv('MYSQL_PASSWORD')
+app.config['MYSQL_DB'] = os.getenv('MYSQL_DB')
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
+
 
 # Inicializar extensiones
 mysql = MySQL(app)
@@ -669,4 +675,7 @@ def inject_cantidad_no_leidas():
 
 # Ejecutar la aplicación
 if __name__ == '__main__':
-    app.run(debug=True)
+    from os import environ
+    port = int(environ.get('PORT', 5000))
+    app.run(debug=True, host='0.0.0.0', port=port)
+
