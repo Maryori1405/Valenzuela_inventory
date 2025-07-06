@@ -1,39 +1,39 @@
-import os
-from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_mysqldb import MySQL
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from datetime import datetime
+from datetime import datetime, timedelta
 from sklearn.linear_model import LinearRegression
 import io, base64, unicodedata, matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
-# Cargar variables del archivo .env
-load_dotenv()
-
-# Usar backend sin GUI para matplotlib (útil en servidores)
+# Usar backend sin GUI para matplotlib (útil en servidores sin entorno gráfico)
 matplotlib.use('Agg')
+
+# Cargar variables de entorno si estamos en desarrollo
+if __name__ == '__main__':
+    from dotenv import load_dotenv
+    load_dotenv()
 
 # Inicialización de la app
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY')
+app.secret_key = os.getenv('SECRET_KEY', 'clave_por_defecto_insegura')
 
-# Configuración MySQL usando variables de entorno
+# Configuración de la base de datos MySQL (Railway o entorno local si aplica)
 app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST')
-app.config['MYSQL_PORT'] = int(os.getenv('MYSQL_PORT'))  # convertimos a entero
+app.config['MYSQL_PORT'] = int(os.getenv('MYSQL_PORT', 3306))
 app.config['MYSQL_USER'] = os.getenv('MYSQL_USER')
 app.config['MYSQL_PASSWORD'] = os.getenv('MYSQL_PASSWORD')
 app.config['MYSQL_DB'] = os.getenv('MYSQL_DB')
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
-
 # Inicializar extensiones
 mysql = MySQL(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
-login_manager.login_view = 'login'  # Redireccionará aquí si no estás autenticado
+login_manager.login_view = 'login'  # Redirige al login si no está autenticado
 
 # Modelo de usuario para Flask-Login
 class Usuario(UserMixin):
@@ -41,7 +41,6 @@ class Usuario(UserMixin):
         self.id = id
         self.username = username
         self.password_hash = password_hash
-
 # Cargar usuario desde la base de datos
 @login_manager.user_loader
 def load_user(user_id):
@@ -673,9 +672,5 @@ def inject_cantidad_no_leidas():
         print(f"Error en inject_cantidad_no_leidas: {e}")
         return dict(cantidad_no_leidas=0, cantidad_alerta_pred=0)
 
-# Ejecutar la aplicación
 if __name__ == '__main__':
-    from os import environ
-    port = int(environ.get('PORT', 5000))
-    app.run(debug=True, host='0.0.0.0', port=port)
-
+    app.run(debug=True)
