@@ -7,7 +7,6 @@ colorama==0.4.6
 Flask==3.1.1
 Flask-Bcrypt==1.0.1
 Flask-Login==0.6.3
-Flask-MySQLdb==2.0.0
 gunicorn==21.2.0
 idna==3.10
 itsdangerous==2.2.0
@@ -15,11 +14,11 @@ Jinja2==3.1.6
 joblib==1.5.1
 MarkupSafe==3.0.2
 matplotlib==3.10.3
-mysqlclient==2.2.7
 numpy==2.2.6
 packaging==25.0
 pillow==11.2.1
 plotly==6.1.2
+pymysql==1.1.0
 pyparsing==3.2.3
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.1
