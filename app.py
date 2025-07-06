@@ -54,7 +54,7 @@ def home():
 
 # Punto de entrada
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=8000)
 
 
 @app.route('/login', methods=['GET', 'POST'])
