@@ -5,9 +5,8 @@ from datetime import datetime, timedelta
 from sklearn.linear_model import LinearRegression
 import io, base64, unicodedata, matplotlib
 import matplotlib.pyplot as plt
-from MySQLdb.cursors import DictCursor
 from dotenv import load_dotenv
-from db import init_db, mysql
+from db import init_db, mysql  # mysql ya se importa aquí, NO volver a crearlo
 import numpy as np
 import os
 
@@ -17,19 +16,19 @@ matplotlib.use('Agg')
 # ✅ Cargar variables de entorno desde .env
 load_dotenv()
 
-# Inicialización de la app
+# ✅ Inicializar la aplicación Flask
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'clave_por_defecto_insegura')
 
-# ✅ Inicializar la base de datos con configuración desde db.py
+# ✅ Inicializar la base de datos (usa configuración desde .env y db.py)
 init_db(app)
 
-# ✅ Inicializar extensiones (NO inicialices de nuevo mysql aquí)
+# ✅ Inicializar extensiones
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'  # Redirige al login si no está autenticado
 
-# Modelo de usuario para Flask-Login
+# ✅ Modelo de usuario para Flask-Login
 class Usuario(UserMixin):
     def __init__(self, id, username, password_hash):
         self.id = id
