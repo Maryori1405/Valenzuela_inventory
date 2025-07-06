@@ -3,9 +3,11 @@ from flask_mysqldb import MySQL
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from datetime import datetime, timedelta
+from MySQLdb.cursors import DictCursor
 from sklearn.linear_model import LinearRegression
 import io, base64, unicodedata, matplotlib
 import matplotlib.pyplot as plt
+from dotenv import load_dotenv
 import numpy as np
 import os
 
@@ -14,7 +16,7 @@ matplotlib.use('Agg')
 
 # Cargar variables de entorno si estamos en desarrollo
 if __name__ == '__main__':
-    from dotenv import load_dotenv
+    
     load_dotenv()
 
 # Inicialización de la app
@@ -68,7 +70,7 @@ def login():
         usuario = request.form['username']
         contraseña = request.form['password']
 
-        cur = mysql.connection.cursor()
+        cur = mysql.connection.cursor(DictCursor)
         cur.execute("SELECT * FROM usuarios WHERE username = %s", (usuario,))
         data = cur.fetchone()
         cur.close()
@@ -97,7 +99,7 @@ def registro():
         # Generar el hash seguro
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
-        cur = mysql.connection.cursor()
+        cur = mysql.connection.cursor(DictCursor)
         cur.execute("INSERT INTO usuarios (username, password_hash) VALUES (%s, %s)", (username, hashed_password))
         mysql.connection.commit()
         cur.close()
@@ -183,7 +185,7 @@ def agregar_producto():
             stock_optimo = int(request.form['stock_optimo'])
             stock_maximo = int(request.form['stock_maximo'])
 
-            cur = mysql.connection.cursor()
+            cur = mysql.connection.cursor(DictCursor)
             
             # Insertar producto en la tabla INCLUYENDO usuario_id
             cur.execute("""
@@ -284,7 +286,7 @@ def productos():
 @app.route('/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
 def editar(id):
-    cur = mysql.connection.cursor()
+    cur = mysql.connection.cursor(DictCursor)
 
     # Obtener producto actual
     cur.execute("SELECT * FROM productos WHERE id = %s", (id,))
@@ -340,7 +342,7 @@ def editar(id):
 @app.route('/eliminar/<int:id>', methods=['POST'])
 @login_required
 def eliminar(id):
-    cur = mysql.connection.cursor()
+    cur = mysql.connection.cursor(DictCursor)
 
     # Obtener stock antes de eliminar
     cur.execute("SELECT stock_actual FROM productos WHERE id=%s", (id,))
