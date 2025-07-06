@@ -675,4 +675,5 @@ def inject_cantidad_no_leidas():
         return dict(cantidad_no_leidas=0, cantidad_alerta_pred=0)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))  # Render te da el puerto
+    app.run(host='0.0.0.0', port=port)
