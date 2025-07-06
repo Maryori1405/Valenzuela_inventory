@@ -8,6 +8,7 @@ Flask==3.1.1
 Flask-Bcrypt==1.0.1
 Flask-Login==0.6.3
 Flask-MySQLdb==2.0.0
+gunicorn==21.2.0
 idna==3.10
 itsdangerous==2.2.0
 Jinja2==3.1.6
