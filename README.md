@@ -1,37 +1,27 @@
-# Aplicación de Gestión de Inventarios con Flask y MySQL (XAMPP)
+# 📦 Aplicación de Gestión de Inventarios con Flask y MySQL (Railway)
 
-## Descripción
-Esta aplicación web permite gestionar un inventario simple con estados visuales sobre el nivel de stock: crítico, regular, óptimo y exceso.
+## 📄 Descripción
+Esta aplicación web permite gestionar un inventario de productos con visualización por colores del estado de stock: Crítico, Regular, Óptimo y Exceso. También ofrece predicción de consumo, historial de movimientos y notificaciones inteligentes.
 
-## Tecnologías usadas
-- Backend: Python + Flask
-- Frontend: HTML + Bootstrap 5
-- Base de datos: MySQL (con XAMPP)
-- Librería para conexión a MySQL: mysql-connector-python
+## 🚀 Tecnologías Usadas
+- **Backend**: Python + Flask
+- **Frontend**: HTML + Bootstrap 5 + Jinja2
+- **Base de datos**: MySQL (Railway.app)
+- **Conexión**: Flask-MySQLdb
+- **ML y Gráficos**: Scikit-learn, Matplotlib
 
-## Configuración de la base de datos
-1. Abre XAMPP y asegúrate que MySQL está activo.
-2. Abre phpMyAdmin (http://localhost/phpmyadmin).
-3. Crea la base de datos e importa la tabla con:
+## ⚙️ Configuración de la Base de Datos (Railway)
+La base de datos está alojada en Railway y se conecta mediante variables de entorno definidas en un archivo `.env`.
 
-```sql
-CREATE DATABASE inventario_db;
+Ejemplo de archivo `.env`:
 
-USE inventario_db;
-
-CREATE TABLE productos (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100),
-    stock_actual INT,
-    stock_optimo INT,
-    stock_maximo INT
-);
-
-INSERT INTO productos (nombre, stock_actual, stock_optimo, stock_maximo) VALUES
-('Producto A', 5, 10, 20),
-('Producto B', 15, 10, 20),
-('Producto C', 22, 10, 20),
-('Producto D', 8, 10, 20);
+```env
+MYSQL_HOST=yamanote.proxy.rlwy.net
+MYSQL_PORT=28413
+MYSQL_USER=root
+MYSQL_PASSWORD=izrghvAsXGqdEqMbBuvUwUfGyAYlsARN
+MYSQL_DB=railway
+SECRET_KEY=clave_secreta_super_segura
 ```
 
 ## Cómo ejecutar la aplicación
