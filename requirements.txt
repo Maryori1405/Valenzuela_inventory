@@ -31,7 +31,6 @@ libclang==18.1.1
 Markdown==3.8.2
 MarkupSafe==3.0.2
 matplotlib==3.10.3
-mysqlclient==2.2.7
 narwhals==1.42.0
 numpy==2.2.6
 oauthlib==3.3.1
