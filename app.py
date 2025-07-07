@@ -146,7 +146,7 @@ def inject_cantidad_no_leidas():
 @app.route('/')
 @login_required
 def inicio():
-    cursor = mysql.connection.cursor()
+    cursor = mysql.connection.cursor(DictCursor)
     hoy = datetime.now().date()
     hace_7_dias = hoy - timedelta(days=6)
 
