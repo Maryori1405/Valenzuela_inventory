@@ -497,8 +497,14 @@ def historial():
     hasta = request.args.get('hasta')
 
     cur = mysql.connection.cursor(DictCursor)
+    cur.execute("SET time_zone = '-05:00'")  # Asegura la zona horaria en la sesión
+
     query = """
-        SELECT h.*, p.nombre AS nombre_producto, u.username AS usuario
+        SELECT 
+            CONVERT_TZ(h.fecha_hora, '+00:00', '-05:00') AS fecha_hora_local,
+            h.*, 
+            p.nombre AS nombre_producto, 
+            u.username AS usuario
         FROM historial_movimientos h
         JOIN productos p ON h.producto_id = p.id
         LEFT JOIN usuarios u ON h.usuario_id = u.id
