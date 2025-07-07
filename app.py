@@ -49,20 +49,25 @@ def load_user(user_id):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        usuario = request.form['username']
-        contraseña = request.form['password']
+        usuario = request.form.get('username')
+        contraseña = request.form.get('password')
 
-        cur = mysql.connection.cursor(DictCursor)
-        cur.execute("SELECT * FROM usuarios WHERE username = %s", (usuario,))
-        data = cur.fetchone()
-        cur.close()
+        try:
+            cur = mysql.connection.cursor(DictCursor)
+            cur.execute("SELECT * FROM usuarios WHERE username = %s", (usuario,))
+            data = cur.fetchone()
+            cur.close()
 
-        if data and bcrypt.check_password_hash(data['password_hash'], contraseña):
-            user = Usuario(data['id'], data['username'], data['password_hash'])
-            login_user(user)
-            return redirect(url_for('inicio'))
-        else:
-            flash('Usuario o contraseña incorrecta', 'danger')
+            if data and bcrypt.check_password_hash(data['password_hash'], contraseña):
+                user = Usuario(data['id'], data['username'], data['password_hash'])
+                login_user(user)
+                return redirect(url_for('inicio'))
+            else:
+                flash('Usuario o contraseña incorrecta', 'danger')
+
+        except Exception as e:
+            print("💥 Error en login:", e)
+            flash('Error interno del servidor', 'danger')
 
     return render_template('login.html')
 
