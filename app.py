@@ -29,14 +29,14 @@ bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'  # Redirige al login si no está autenticado
 
-# ✅ Modelo de usuario para Flask-Login
+# Modelo de usuario
 class Usuario(UserMixin):
     def __init__(self, id, username, password_hash):
         self.id = id
         self.username = username
         self.password_hash = password_hash
 
-# Cargar usuario desde la base de datos
+# Cargar usuario
 @login_manager.user_loader
 def load_user(user_id):
     cur = mysql.connection.cursor()
@@ -44,7 +44,7 @@ def load_user(user_id):
     usuario = cur.fetchone()
     cur.close()
     if usuario:
-        return Usuario(id=usuario['id'], username=usuario['username'], password_hash=usuario['password'])
+        return Usuario(id=usuario['id'], username=usuario['username'], password_hash=usuario['password_hash'])
     return None
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -58,7 +58,7 @@ def login():
             return render_template('login.html')
 
         try:
-            cur = mysql.connection.cursor(DictCursor)
+            cur = mysql.connection.cursor()
             cur.execute("SELECT * FROM usuarios WHERE username = %s", (usuario,))
             data = cur.fetchone()
             cur.close()
@@ -94,8 +94,7 @@ def registro():
             return render_template('registro.html')
 
         try:
-            # Verifica si el usuario ya existe
-            cur = mysql.connection.cursor(DictCursor)
+            cur = mysql.connection.cursor()
             cur.execute("SELECT * FROM usuarios WHERE username = %s", (username,))
             existente = cur.fetchone()
 
@@ -104,10 +103,8 @@ def registro():
                 cur.close()
                 return render_template('registro.html')
 
-            # Hashea la contraseña
             hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
-            # Inserta el nuevo usuario
             cur.execute("INSERT INTO usuarios (username, password_hash) VALUES (%s, %s)", (username, hashed_password))
             mysql.connection.commit()
             cur.close()
@@ -132,7 +129,6 @@ def calcular_estado(stock_actual, stock_optimo, stock_maximo):
 @app.context_processor
 def inject_cantidad_no_leidas():
     try:
-        # Usar DictCursor para poder acceder por nombre de columna
         cur = mysql.connection.cursor()
         cur.execute("""
             SELECT COUNT(*) AS total FROM productos 
@@ -149,7 +145,7 @@ def inject_cantidad_no_leidas():
 @app.route('/')
 @login_required
 def inicio():
-    cursor = mysql.connection.cursor(DictCursor)
+    cursor = mysql.connection.cursor()
     hoy = datetime.now().date()
     hace_7_dias = hoy - timedelta(days=6)
 
@@ -198,19 +194,16 @@ def agregar_producto():
             stock_optimo = int(request.form['stock_optimo'])
             stock_maximo = int(request.form['stock_maximo'])
 
-            cur = mysql.connection.cursor(DictCursor)
-            
-            # Insertar producto en la tabla INCLUYENDO usuario_id
+            cur = mysql.connection.cursor()
+
             cur.execute("""
                 INSERT INTO productos (nombre, categoria, stock_actual, stock_optimo, stock_maximo, usuario_id)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """, (nombre, categoria, stock_actual, stock_optimo, stock_maximo, current_user.id))
             mysql.connection.commit()
 
-            # Obtener el ID del producto recién insertado
             producto_id = cur.lastrowid
 
-            # Registrar movimiento de entrada si el stock_actual > 0
             if stock_actual > 0:
                 cur.execute("""
                     INSERT INTO historial_movimientos (producto_id, tipo_movimiento, cantidad, fecha_hora)
@@ -221,11 +214,11 @@ def agregar_producto():
             cur.close()
             flash('✅ Producto agregado correctamente', 'success')
             return redirect(url_for('productos'))
-            
+
         except Exception as e:
             mysql.connection.rollback()
             flash(f'❌ Error al agregar producto: {str(e)}', 'error')
-            print(f"Error: {e}")  # Para debugging
+            print(f"Error: {e}")
             return render_template('agregar_producto.html')
 
     return render_template('agregar_producto.html')
@@ -237,7 +230,7 @@ def consultar_productos():
     if request.method == 'POST':
         criterio = request.form['criterio']
         valor = request.form['valor']
-        cur = mysql.connection.cursor(DictCursor)
+        cur = mysql.connection.cursor()
 
         if criterio == 'nombre':
             cur.execute("""
@@ -284,7 +277,7 @@ def consultar_productos():
 @app.route('/productos')
 @login_required
 def productos():
-    cur = mysql.connection.cursor(DictCursor)
+    cur = mysql.connection.cursor()
     cur.execute("""SELECT *, CASE
         WHEN stock_actual < stock_optimo * 0.5 THEN 'Crítico'
         WHEN stock_actual < stock_optimo THEN 'Regular'
@@ -294,9 +287,7 @@ def productos():
     """)
     productos = cur.fetchall()
     cur.close()
-    return render_template('tabla_producto.html', productos=productos)
-
-@app.route('/editar/<int:id>', methods=['GET', 'POST'])
+    return render_template('tabla_producto.html', productos=productos)@app.route('/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
 def editar(id):
     cur = mysql.connection.cursor(DictCursor)
