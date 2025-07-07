@@ -6,6 +6,7 @@ from sklearn.linear_model import LinearRegression
 import io, base64, unicodedata, matplotlib
 import matplotlib.pyplot as plt
 from pymysql.cursors import DictCursor
+from MySQLdb.cursors import DictCursor
 from dotenv import load_dotenv
 from db import init_db, mysql  # mysql ya se importa aquí, NO volver a crearlo
 import numpy as np
