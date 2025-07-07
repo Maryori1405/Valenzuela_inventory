@@ -207,9 +207,9 @@ def agregar_producto():
 
             if stock_actual > 0:
                 cur.execute("""
-                    INSERT INTO historial_movimientos (producto_id, tipo_movimiento, cantidad, fecha_hora)
-                    VALUES (%s, 'entrada', %s, NOW())
-                """, (producto_id, stock_actual))
+                    INSERT INTO historial_movimientos (producto_id, tipo_movimiento, cantidad, fecha_hora, usuario_id)
+                    VALUES (%s, 'entrada', %s, NOW(), %s)
+                """, (producto_id, stock_actual, current_user.id))
                 mysql.connection.commit()
 
             cur.close()
