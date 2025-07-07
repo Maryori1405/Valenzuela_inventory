@@ -81,19 +81,27 @@ def logout():
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
     if request.method == 'POST':
-        username = request.form['username']
+        username = request.form['username'].strip()
         password = request.form['password']
 
-        # Generar el hash seguro
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        try:
+            # Aseguramos que la contraseña se convierte a string
+            hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
-        cur = mysql.connection.cursor(DictCursor)
-        cur.execute("INSERT INTO usuarios (username, password_hash) VALUES (%s, %s)", (username, hashed_password))
-        mysql.connection.commit()
-        cur.close()
+            cur = mysql.connection.cursor(DictCursor)
 
-        flash('Usuario registrado exitosamente', 'success')
-        return redirect(url_for('login'))
+            # 👇 insert seguro
+            cur.execute("INSERT INTO usuarios (username, password_hash) VALUES (%s, %s)", (username, hashed_password))
+            mysql.connection.commit()
+            cur.close()
+
+            flash('Usuario registrado exitosamente', 'success')
+            return redirect(url_for('login'))
+
+        except Exception as e:
+            print("💥 Error en registro:", e)
+            flash('Ocurrió un error al registrar el usuario', 'danger')
+
     return render_template('registro.html')
 
 def calcular_estado(stock_actual, stock_optimo, stock_maximo):
