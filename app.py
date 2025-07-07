@@ -50,8 +50,12 @@ def load_user(user_id):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        usuario = request.form.get('username')
+        usuario = request.form.get('username', '').strip()
         contraseña = request.form.get('password')
+
+        if not usuario or not contraseña:
+            flash('Por favor, completa todos los campos', 'warning')
+            return render_template('login.html')
 
         try:
             cur = mysql.connection.cursor(DictCursor)
@@ -62,6 +66,7 @@ def login():
             if data and bcrypt.check_password_hash(data['password_hash'], contraseña):
                 user = Usuario(data['id'], data['username'], data['password_hash'])
                 login_user(user)
+                flash('Inicio de sesión exitoso', 'success')
                 return redirect(url_for('inicio'))
             else:
                 flash('Usuario o contraseña incorrecta', 'danger')
@@ -84,13 +89,25 @@ def registro():
         username = request.form['username'].strip()
         password = request.form['password']
 
+        if not username or not password:
+            flash('Todos los campos son obligatorios', 'warning')
+            return render_template('registro.html')
+
         try:
-            # Aseguramos que la contraseña se convierte a string
+            # Verifica si el usuario ya existe
+            cur = mysql.connection.cursor(DictCursor)
+            cur.execute("SELECT * FROM usuarios WHERE username = %s", (username,))
+            existente = cur.fetchone()
+
+            if existente:
+                flash('Este nombre de usuario ya está registrado', 'warning')
+                cur.close()
+                return render_template('registro.html')
+
+            # Hashea la contraseña
             hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
-            cur = mysql.connection.cursor(DictCursor)
-
-            # 👇 insert seguro
+            # Inserta el nuevo usuario
             cur.execute("INSERT INTO usuarios (username, password_hash) VALUES (%s, %s)", (username, hashed_password))
             mysql.connection.commit()
             cur.close()
