@@ -119,14 +119,6 @@ def registro():
 
     return render_template('registro.html')
 
-def calcular_estado(stock_actual, stock_optimo, stock_maximo):
-    if stock_actual < stock_optimo:
-        return 'Crítico' if stock_actual < stock_optimo * 0.5 else 'Regular'
-    elif stock_actual > stock_maximo:
-        return 'Exceso'
-    else:
-        return 'Óptimo'
-
 @app.context_processor
 def inject_cantidad_no_leidas():
     try:
@@ -150,6 +142,7 @@ def inicio():
     hoy = datetime.now().date()
     hace_7_dias = hoy - timedelta(days=6)
 
+    # Gráfico de estado de productos por día
     cursor.execute("""
         SELECT fecha,
             SUM(CASE WHEN stock_actual < stock_optimo * 0.5 THEN 1 ELSE 0 END) AS critico,
@@ -162,7 +155,6 @@ def inicio():
         ORDER BY fecha
     """, (hace_7_dias, hoy))
     filas = cursor.fetchall()
-    cursor.close()
 
     fechas = []
     data_critico = []
@@ -177,12 +169,38 @@ def inicio():
         data_optimo.append(fila['optimo'])
         data_exceso.append(fila['exceso'])
 
+    # Tarjetas resumen
+    cursor.execute("SELECT COUNT(*) AS total FROM productos")
+    total_productos = cursor.fetchone()['total']
+
+    cursor.execute("""
+        SELECT COUNT(*) AS total_criticos
+        FROM productos
+        WHERE stock_actual < stock_optimo * 0.5
+    """)
+    total_criticos = cursor.fetchone()['total_criticos']
+
+    # Top 5 productos más críticos
+    cursor.execute("""
+        SELECT nombre, stock_actual, stock_optimo
+        FROM productos
+        WHERE stock_actual < stock_optimo
+        ORDER BY stock_actual ASC
+        LIMIT 5
+    """)
+    productos_criticos = cursor.fetchall()
+
+    cursor.close()
+
     return render_template('inicio.html',
                            fechas=fechas,
                            data_critico=data_critico,
                            data_regular=data_regular,
                            data_optimo=data_optimo,
-                           data_exceso=data_exceso)
+                           data_exceso=data_exceso,
+                           total_productos=total_productos,
+                           total_criticos=total_criticos,
+                           productos_criticos=productos_criticos)
 
 @app.route('/agregar_producto', methods=['GET', 'POST'])
 @login_required
