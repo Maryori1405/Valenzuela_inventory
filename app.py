@@ -287,7 +287,9 @@ def productos():
     """)
     productos = cur.fetchall()
     cur.close()
-    return render_template('tabla_producto.html', productos=productos)@app.route('/editar/<int:id>', methods=['GET', 'POST'])
+    return render_template('tabla_producto.html', productos=productos)
+
+@app.route('/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
 def editar(id):
     cur = mysql.connection.cursor(DictCursor)
