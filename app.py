@@ -231,7 +231,7 @@ def consultar_productos():
     if request.method == 'POST':
         criterio = request.form['criterio']
         valor = request.form['valor']
-        cur = mysql.connection.cursor()
+        cur = mysql.connection.cursor(DictCursor)
 
         if criterio == 'nombre':
             cur.execute("""
@@ -278,7 +278,7 @@ def consultar_productos():
 @app.route('/productos')
 @login_required
 def productos():
-    cur = mysql.connection.cursor()
+    cur = mysql.connection.cursor(DictCursor)
     cur.execute("""SELECT *, CASE
         WHEN stock_actual < stock_optimo * 0.5 THEN 'Crítico'
         WHEN stock_actual < stock_optimo THEN 'Regular'
@@ -488,7 +488,6 @@ def prediccion():
 
     cur.close()
     return render_template('prediccion.html', resultados=resultados, grafico_general=grafico_general)
-
 
 @app.route('/historial')
 @login_required
