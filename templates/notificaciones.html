@@ -5,6 +5,21 @@
 {% block content %}
 <h1 class="text-3xl font-semibold mb-6">Notificaciones de Stock</h1>
 
+<div class="mb-6">
+  <div class="bg-[#FFFDF6] border border-[#E0DACC] p-5 rounded-xl shadow-sm hover:shadow-md transition">
+    <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
+      <i data-lucide="timer-off" class="w-5 h-5 text-yellow-600"></i>
+      Productos sin movimiento reciente
+    </h2>
+    <p class="text-sm text-[#6D6D6D] mt-1">
+      Consulta los productos que no han tenido salidas en los últimos <strong>30 días</strong>.
+    </p>
+    <a href="{{ url_for('productos_sin_movimiento') }}" class="inline-block mt-3 text-blue-600 hover:underline text-sm font-medium">
+      Ver productos sin movimiento →
+    </a>
+  </div>
+</div>
+
 {% if notificaciones %}
 <table class="w-full text-center border-collapse bg-[#FFFDF6] shadow-md rounded-xl overflow-hidden border border-[#E0DACC]">
     <thead class="bg-[#F2ECE5] text-center">
@@ -47,3 +62,4 @@
 <p class="text-[#6D6D6D] italic">No hay alertas de stock en este momento.</p>
 {% endif %}
 {% endblock %}
+<script>lucide.createIcons();</script>

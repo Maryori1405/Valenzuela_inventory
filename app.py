@@ -704,6 +704,26 @@ def inject_cantidad_no_leidas():
         print(f"Error en inject_cantidad_no_leidas: {e}")
         return dict(cantidad_no_leidas=0, cantidad_alerta_pred=0)
 
+@app.route('/productos_sin_movimiento')
+@login_required
+def productos_sin_movimiento():
+    dias = int(request.args.get('dias', 30))  # Valor por defecto: 30 días
+    fecha_limite = datetime.now() - timedelta(days=dias)
+
+    cur = mysql.connection.cursor(DictCursor)
+    cur.execute("""
+        SELECT p.id, p.nombre, p.stock_actual, MAX(h.fecha_hora) AS ultima_salida
+        FROM productos p
+        LEFT JOIN historial_movimientos h ON p.id = h.producto_id AND h.tipo_movimiento = 'salida'
+        GROUP BY p.id, p.nombre, p.stock_actual
+        HAVING ultima_salida IS NULL OR ultima_salida < %s
+        ORDER BY ultima_salida ASC
+    """, (fecha_limite,))
+    productos = cur.fetchall()
+    cur.close()
+
+    return render_template('productos_sin_movimiento.html', productos=productos, dias=dias)
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))  # Render te da el puerto
     app.run(host='0.0.0.0', port=port)
