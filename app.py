@@ -209,6 +209,7 @@ def agregar_producto():
         try:
             nombre = request.form['nombre']
             categoria = request.form['categoria']
+            precio_unitario = float(request.form['precio_unitario'])
             stock_actual = int(request.form['stock_actual'])
             stock_optimo = int(request.form['stock_optimo'])
             stock_maximo = int(request.form['stock_maximo'])
@@ -216,9 +217,9 @@ def agregar_producto():
             cur = mysql.connection.cursor()
 
             cur.execute("""
-                INSERT INTO productos (nombre, categoria, stock_actual, stock_optimo, stock_maximo, usuario_id)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """, (nombre, categoria, stock_actual, stock_optimo, stock_maximo, current_user.id))
+                INSERT INTO productos (nombre, categoria, precio, stock_actual, stock_optimo, stock_maximo, usuario_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (nombre, categoria, precio, stock_actual, stock_optimo, stock_maximo, current_user.id))
             mysql.connection.commit()
 
             producto_id = cur.lastrowid
@@ -327,16 +328,16 @@ def editar(id):
         stock_actual = int(request.form['stock_actual'])
         stock_optimo = int(request.form['stock_optimo'])
         stock_maximo = int(request.form['stock_maximo'])
+        precio_unitario = float(request.form['precio_unitario'])
 
-        # Corregido: accedemos a 'stock_actual' como string
         stock_anterior = int(producto['stock_actual'])
 
-        # Actualizar producto
+        # Actualizar producto con precio_unitario
         cur.execute("""
             UPDATE productos 
-            SET nombre=%s, categoria=%s, stock_actual=%s, stock_optimo=%s, stock_maximo=%s 
+            SET nombre=%s, categoria=%s, stock_actual=%s, stock_optimo=%s, stock_maximo=%s, precio_unitario=%s 
             WHERE id=%s
-        """, (nombre, categoria, stock_actual, stock_optimo, stock_maximo, id))
+        """, (nombre, categoria, stock_actual, stock_optimo, stock_maximo, precio_unitario, id))
         mysql.connection.commit()
 
         # Registrar movimiento si cambió el stock_actual
@@ -352,16 +353,16 @@ def editar(id):
         flash('Producto actualizado y movimiento registrado', 'success')
         return redirect(url_for('productos'))
 
-    # Mapeamos la fila a un diccionario si no lo era ya
+    # Mapeamos la fila a un diccionario incluyendo precio_unitario
     producto_dict = {
         'id': producto['id'],
         'nombre': producto['nombre'],
         'categoria': producto['categoria'],
         'stock_actual': producto['stock_actual'],
         'stock_optimo': producto['stock_optimo'],
-        'stock_maximo': producto['stock_maximo']
+        'stock_maximo': producto['stock_maximo'],
+        'precio_unitario': producto['precio_unitario']
     }
-
     return render_template('editar_producto.html', producto=producto_dict)
 
 @app.route('/eliminar/<int:id>', methods=['POST'])
@@ -732,7 +733,7 @@ def clasificacion_abc():
     # Obtener los productos con salidas y valor consumido
     cur.execute("""
         SELECT p.id, p.nombre, p.categoria, SUM(h.cantidad) AS total_salidas, 
-               p.precio, SUM(h.cantidad * p.precio) AS valor_consumido
+               p.precio_unitario, SUM(h.cantidad * p.precio_unitario) AS valor_consumido
         FROM historial_movimientos h
         JOIN productos p ON h.producto_id = p.id
         WHERE h.tipo_movimiento = 'Salida'
@@ -780,6 +781,74 @@ def sugerencias_pedido():
 
     cur.close()
     return render_template('sugerencias_pedido.html', productos=productos)
+
+@app.route('/exportar_historial_excel')
+@login_required
+def exportar_historial_excel():
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT h.id, p.nombre AS producto, h.tipo_movimiento, h.cantidad, h.fecha_hora
+        FROM historial_movimientos h
+        JOIN productos p ON h.producto_id = p.id
+        ORDER BY h.fecha_hora DESC
+    """)
+    datos = cur.fetchall()
+    cur.close()
+
+    import pandas as pd
+    df = pd.DataFrame(datos, columns=['ID', 'Producto', 'Movimiento', 'Cantidad', 'Fecha'])
+
+    output = BytesIO()
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    df.to_excel(writer, index=False, sheet_name='Historial')
+    writer.close()
+    output.seek(0)
+
+    return send_file(output, download_name="historial_movimientos.xlsx", as_attachment=True)
+
+@app.route('/exportar_productos_pdf')
+@login_required
+def exportar_productos_pdf():
+    from fpdf import FPDF
+
+    cur = mysql.connection.cursor(DictCursor)
+    cur.execute("SELECT nombre, categoria, stock_actual, stock_optimo, stock_maximo FROM productos")
+    productos = cur.fetchall()
+    cur.close()
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, "Listado de Productos", ln=1, align='C')
+
+    for p in productos:
+        texto = f"{p['nombre']} | {p['categoria']} | Stock: {p['stock_actual']}/{p['stock_optimo']} - Máx: {p['stock_maximo']}"
+        pdf.cell(200, 10, txt=texto, ln=1)
+
+    output = BytesIO()
+    pdf.output(output)
+    output.seek(0)
+
+    return send_file(output, download_name="productos.pdf", as_attachment=True)
+
+@app.route('/reporte_semanal')
+@login_required
+def reporte_semanal():
+    hoy = datetime.now()
+    hace_7_dias = hoy - timedelta(days=7)
+
+    cur = mysql.connection.cursor(DictCursor)
+    cur.execute("""
+        SELECT h.id, p.nombre AS producto, h.tipo_movimiento, h.cantidad, h.fecha_hora
+        FROM historial_movimientos h
+        JOIN productos p ON h.producto_id = p.id
+        WHERE h.fecha_hora BETWEEN %s AND %s
+        ORDER BY h.fecha_hora DESC
+    """, (hace_7_dias, hoy))
+    movimientos = cur.fetchall()
+    cur.close()
+
+    return render_template('reporte_semanal.html', movimientos=movimientos, desde=hace_7_dias, hasta=hoy)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))  # Render te da el puerto
