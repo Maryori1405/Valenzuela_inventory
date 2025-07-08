@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from db import init_db, mysql  # mysql ya se importa aquí, NO volver a crearlo
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from reportlab.platypus import Image
 import pandas as pd
 from flask import send_file
 import numpy as np
@@ -809,8 +810,10 @@ def reportes():
 @app.route('/exportar_pdf')
 @login_required
 def exportar_pdf():
+    # Obtener datos del inventario
     cur = mysql.connection.cursor(DictCursor)
-    
+
+    # Conteo de estados del inventario
     cur.execute("SELECT COUNT(*) AS total FROM productos")
     total = cur.fetchone()['total']
 
@@ -823,16 +826,52 @@ def exportar_pdf():
     cur.execute("SELECT COUNT(*) AS total FROM productos WHERE stock_actual >= stock_optimo AND stock_actual <= stock_maximo")
     optimos = cur.fetchone()['total']
 
+    # Consumo estimado: rendimiento de productos (ventas)
+    cur.execute("""
+        SELECT p.nombre, SUM(CASE WHEN h.tipo_movimiento = 'Salida' THEN h.cantidad ELSE 0 END) AS total_vendido
+        FROM productos p
+        LEFT JOIN historial_movimientos h ON p.id = h.producto_id
+        GROUP BY p.id
+    """)
+    ventas = cur.fetchall()
     cur.close()
 
+    # 🎯 Generar gráfico 1: barras (estado del inventario)
+    plt.figure(figsize=(6, 4))
+    estados = ['Críticos', 'Regulares', 'Óptimos']
+    cantidades = [criticos, regulares, optimos]
+    colores = ['red', 'orange', 'green']
+    plt.bar(estados, cantidades, color=colores)
+    plt.title('Estado del Inventario')
+    plt.ylabel('Cantidad')
+    plt.tight_layout()
+    grafico_path = 'grafico_estado.png'
+    plt.savefig(grafico_path)
+    plt.close()
+
+    # 🎯 Gráfico 2: ventas por producto (pastel)
+    nombres = [v['nombre'] for v in ventas if v['total_vendido'] > 0]
+    totales = [v['total_vendido'] for v in ventas if v['total_vendido'] > 0]
+
+    if nombres:
+        plt.figure(figsize=(6, 6))
+        plt.pie(totales, labels=nombres, autopct='%1.1f%%', startangle=140)
+        plt.title('Ventas por Producto')
+        grafico_ventas_path = 'grafico_ventas.png'
+        plt.savefig(grafico_ventas_path)
+        plt.close()
+    else:
+        grafico_ventas_path = None
+
+    # 📝 Crear PDF
     buffer = io.BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
     y = height - 50
 
     pdf.setFont("Helvetica-Bold", 16)
-    pdf.drawString(50, y, "Reporte General de Productos")
-    y -= 40
+    pdf.drawString(50, y, "📊 Reporte de Inventario")
+    y -= 30
 
     pdf.setFont("Helvetica", 12)
     pdf.drawString(50, y, f"Total de productos: {total}")
@@ -842,38 +881,30 @@ def exportar_pdf():
     pdf.drawString(50, y, f"Productos regulares: {regulares}")
     y -= 20
     pdf.drawString(50, y, f"Productos óptimos: {optimos}")
+    y -= 30
 
-    pdf.showPage()
+    # 📎 Insertar gráfico 1
+    pdf.drawString(50, y, "Gráfico de Estado del Inventario:")
+    y -= 200
+    pdf.drawImage(grafico_path, 50, y, width=500, height=180)
+
+    if grafico_ventas_path:
+        pdf.showPage()
+        y = height - 50
+        pdf.setFont("Helvetica-Bold", 14)
+        pdf.drawString(50, y, "📈 Ventas por Producto")
+        y -= 200
+        pdf.drawImage(grafico_ventas_path, 50, y, width=500, height=180)
+
     pdf.save()
     buffer.seek(0)
 
+    # Opcional: eliminar imágenes temporales si se desea
+    os.remove(grafico_path)
+    if grafico_ventas_path:
+        os.remove(grafico_ventas_path)
+
     return send_file(buffer, download_name="reporte_general.pdf", as_attachment=True)
-
-@app.route('/exportar_excel')
-@login_required
-def exportar_excel():
-    cur = mysql.connection.cursor(DictCursor)
-    
-    cur.execute("""
-        SELECT nombre, categoria, stock_actual, stock_optimo, stock_maximo,
-            CASE
-                WHEN stock_actual < stock_optimo * 0.5 THEN 'Crítico'
-                WHEN stock_actual < stock_optimo THEN 'Regular'
-                WHEN stock_actual <= stock_maximo THEN 'Óptimo'
-                ELSE 'Exceso'
-            END AS estado
-        FROM productos
-    """)
-    productos = cur.fetchall()
-    cur.close()
-
-    df = pd.DataFrame(productos)
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Reporte Productos')
-
-    output.seek(0)
-    return send_file(output, download_name='reporte_productos.xlsx', as_attachment=True)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))  # Render te da el puerto
