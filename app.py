@@ -404,37 +404,37 @@ def editar(id):
 @app.route('/eliminar/<int:id>', methods=['POST'])
 @login_required
 def eliminar(id):
-    try:
-        cur = mysql.connection.cursor(DictCursor)
+    cur = mysql.connection.cursor(DictCursor)
 
-        # Obtener información del producto antes de eliminar
-        cur.execute("SELECT stock_actual FROM productos WHERE id = %s", (id,))
-        producto = cur.fetchone()
+    # Obtener datos del producto antes de eliminar
+    cur.execute("SELECT stock_actual FROM productos WHERE id=%s", (id,))
+    producto = cur.fetchone()
 
-        if not producto:
-            flash('Producto no encontrado.', 'warning')
-            return redirect(url_for('productos'))
-
+    if producto:
         stock_actual = int(producto['stock_actual'])
 
-        # Registrar en historial como 'eliminación' (aunque el stock sea 0)
+        # Registrar movimiento de salida si hay stock
+        if stock_actual > 0:
+            cur.execute("""
+                INSERT INTO historial_movimientos (producto_id, tipo_movimiento, cantidad, fecha_hora, usuario_id)
+                VALUES (%s, 'salida', %s, NOW(), %s)
+            """, (id, stock_actual, current_user.id))
+
+        # Registrar movimiento de eliminación (cantidad = 0 solo para registrar el evento)
         cur.execute("""
             INSERT INTO historial_movimientos (producto_id, tipo_movimiento, cantidad, fecha_hora, usuario_id)
-            VALUES (%s, 'eliminación', %s, NOW(), %s)
-        """, (id, stock_actual, current_user.id))
+            VALUES (%s, 'eliminación', 0, NOW(), %s)
+        """, (id, current_user.id))
 
-        # Eliminar producto (si tienes ON DELETE CASCADE, los demás movimientos se eliminarán automáticamente)
-        cur.execute("DELETE FROM productos WHERE id = %s", (id,))
+        # Eliminar producto
+        cur.execute("DELETE FROM productos WHERE id=%s", (id,))
+
         mysql.connection.commit()
-        flash('Producto eliminado y movimiento registrado.', 'success')
+        flash('Producto eliminado y movimientos registrados.', 'success')
+    else:
+        flash('Producto no encontrado.', 'warning')
 
-    except Exception as e:
-        mysql.connection.rollback()
-        flash(f'Error al eliminar el producto: {str(e)}', 'danger')
-
-    finally:
-        cur.close()
-
+    cur.close()
     return redirect(url_for('productos'))
 
 @app.route('/notificaciones')
