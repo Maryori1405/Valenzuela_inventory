@@ -784,6 +784,73 @@ def sugerencias_pedido():
     cur.close()
     return render_template('sugerencias_pedido.html', productos=productos)
 
+@app.route('/exportar_historial_excel')
+@login_required
+def exportar_historial_excel():
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT h.id, p.nombre AS producto, h.tipo_movimiento, h.cantidad, h.fecha_hora
+        FROM historial_movimientos h
+        JOIN productos p ON h.producto_id = p.id
+        ORDER BY h.fecha_hora DESC
+    """)
+    datos = cur.fetchall()
+    cur.close()
+
+    df = pd.DataFrame(datos, columns=['ID', 'Producto', 'Movimiento', 'Cantidad', 'Fecha'])
+
+    output = BytesIO()
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    df.to_excel(writer, index=False, sheet_name='Historial')
+    writer.close()
+    output.seek(0)
+
+    return send_file(output, download_name="historial_movimientos.xlsx", as_attachment=True)
+
+@app.route('/exportar_productos_pdf')
+@login_required
+def exportar_productos_pdf():
+    from fpdf import FPDF
+
+    cur = mysql.connection.cursor(DictCursor)
+    cur.execute("SELECT nombre, categoria, stock_actual, stock_optimo, stock_maximo FROM productos")
+    productos = cur.fetchall()
+    cur.close()
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    pdf.cell(200, 10, "Listado de Productos", ln=1, align='C')
+
+    for p in productos:
+        texto = f"{p['nombre']} | {p['categoria']} | Stock: {p['stock_actual']}/{p['stock_optimo']} - Máx: {p['stock_maximo']}"
+        pdf.cell(200, 10, txt=texto, ln=1)
+
+    output = BytesIO()
+    pdf.output(output)
+    output.seek(0)
+
+    return send_file(output, download_name="productos.pdf", as_attachment=True)
+
+@app.route('/reporte_semanal')
+@login_required
+def reporte_semanal():
+    hoy = datetime.now()
+    hace_7_dias = hoy - timedelta(days=7)
+
+    cur = mysql.connection.cursor(DictCursor)
+    cur.execute("""
+        SELECT h.id, p.nombre AS producto, h.tipo_movimiento, h.cantidad, h.fecha_hora
+        FROM historial_movimientos h
+        JOIN productos p ON h.producto_id = p.id
+        WHERE h.fecha_hora BETWEEN %s AND %s
+        ORDER BY h.fecha_hora DESC
+    """, (hace_7_dias, hoy))
+    movimientos = cur.fetchall()
+    cur.close()
+
+    return render_template('reporte_semanal.html', movimientos=movimientos, desde=hace_7_dias, hasta=hoy)
+
 @app.route('/reportes')
 @login_required
 def reportes():
