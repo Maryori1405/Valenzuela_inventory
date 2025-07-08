@@ -347,9 +347,25 @@ def editar(id):
         stock_maximo = int(request.form['stock_maximo'])
         precio_unitario = float(request.form['precio_unitario'])
 
+        # Verificar que no exista otro producto con el mismo nombre
+        cur.execute("SELECT id FROM productos WHERE nombre = %s AND id != %s", (nombre, id))
+        duplicado = cur.fetchone()
+
+        if duplicado:
+            flash('⚠️ Ya existe otro producto con ese nombre.', 'warning')
+            return render_template('editar_producto.html', producto={
+                'id': id,
+                'nombre': nombre,
+                'categoria': categoria,
+                'stock_actual': stock_actual,
+                'stock_optimo': stock_optimo,
+                'stock_maximo': stock_maximo,
+                'precio_unitario': precio_unitario
+            })
+
         stock_anterior = int(producto['stock_actual'])
 
-        # Actualizar producto con precio_unitario
+        # Actualizar producto
         cur.execute("""
             UPDATE productos 
             SET nombre=%s, categoria=%s, stock_actual=%s, stock_optimo=%s, stock_maximo=%s, precio_unitario=%s 
@@ -367,10 +383,10 @@ def editar(id):
             """, (id, tipo, abs(diferencia), current_user.id))
             mysql.connection.commit()
 
-        flash('Producto actualizado y movimiento registrado', 'success')
+        flash('✅ Producto actualizado y movimiento registrado', 'success')
         return redirect(url_for('productos'))
 
-    # Mapeamos la fila a un diccionario incluyendo precio_unitario
+    # Cargar datos del producto al formulario
     producto_dict = {
         'id': producto['id'],
         'nombre': producto['nombre'],
@@ -380,6 +396,7 @@ def editar(id):
         'stock_maximo': producto['stock_maximo'],
         'precio_unitario': producto['precio_unitario']
     }
+
     return render_template('editar_producto.html', producto=producto_dict)
 
 @app.route('/eliminar/<int:id>', methods=['POST'])
