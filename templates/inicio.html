@@ -23,6 +23,12 @@
       Estado del Inventario (Últimos 7 días)
     </h2>
     <canvas id="areaChart" height="120"></canvas>
+
+    <div class="flex justify-end mt-3">
+      <button onclick="descargarGrafico()" class="text-sm text-blue-600 hover:underline">
+        Descargar gráfico como imagen
+      </button>
+    </div>
   </div>
 
   <!-- Tabla de productos más críticos -->
@@ -52,13 +58,20 @@
   </div>
 
   <!-- Enlaces de navegación -->
-  <div class="flex flex-col sm:flex-row sm:justify-end gap-4 mt-6">
-    <a href="{{ url_for('clasificacion_abc') }}" class="text-sm text-blue-600 hover:underline">
-      Clasificación ABC →
-    </a>
-    <a href="{{ url_for('sugerencias_pedido') }}" class="text-sm text-blue-600 hover:underline">
-      Ver sugerencias de pedido →
-    </a>
+  <div class="grid sm:flex sm:justify-between gap-4 mt-6">
+    <div class="space-x-4">
+      <a href="{{ url_for('clasificacion_abc') }}" class="text-sm text-blue-600 hover:underline">
+        Clasificación ABC →
+      </a>
+      <a href="{{ url_for('sugerencias_pedido') }}" class="text-sm text-blue-600 hover:underline">
+        Ver sugerencias de pedido →
+      </a>
+    </div>
+    <div>
+      <a href="{{ url_for('reportes') }}" class="text-sm text-green-600 hover:underline">
+        Ir a Reportes →
+      </a>
+    </div>
   </div>
 
 </div>
@@ -138,6 +151,14 @@
       }
     }
   });
+
+  // Descargar gráfico como imagen
+  function descargarGrafico() {
+    const link = document.createElement('a');
+    link.download = 'grafico_inventario.png';
+    link.href = document.getElementById('areaChart').toDataURL('image/png');
+    link.click();
+  }
 
   lucide.createIcons();
 </script>

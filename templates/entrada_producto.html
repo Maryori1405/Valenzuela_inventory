@@ -27,6 +27,7 @@
                    {% if producto.stock_actual >= producto.stock_maximo %}disabled{% endif %}>
         </div>
 
+        <div class="flex justify-between items-center pt-4">
         <button type="submit"
                 class="bg-[var(--primary)] hover:bg-[var(--accent)] text-white px-5 py-2 rounded shadow text-sm font-semibold transition
                        {% if producto.stock_actual >= producto.stock_maximo %}opacity-50 cursor-not-allowed{% endif %}"
@@ -37,6 +38,7 @@
            class="text-[var(--text)] hover:underline hover:text-[var(--primary)] transition font-medium">
             Cancelar
         </a>
+        </div>
     </form>
 </div>
 {% endblock %}
