@@ -51,9 +51,19 @@
     </table>
   </div>
 
+  <!-- Enlaces de navegación -->
+  <div class="flex flex-col sm:flex-row sm:justify-end gap-4 mt-6">
+    <a href="{{ url_for('clasificacion_abc') }}" class="text-sm text-blue-600 hover:underline">
+      Clasificación ABC →
+    </a>
+    <a href="{{ url_for('sugerencias_pedido') }}" class="text-sm text-blue-600 hover:underline">
+      Ver sugerencias de pedido →
+    </a>
+  </div>
+
 </div>
 
-<!-- Script de gráfico -->
+<!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   const ctx = document.getElementById('areaChart').getContext('2d');
@@ -109,9 +119,6 @@
       plugins: {
         legend: {
           position: 'bottom'
-        },
-        title: {
-          display: false
         }
       },
       scales: {

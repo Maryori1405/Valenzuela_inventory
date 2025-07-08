@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Clasificación ABC{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-semibold mb-6">Clasificación ABC de Productos</h1>
+
+<!-- Gráfico circular ABC -->
+<div class="bg-white p-6 rounded-xl shadow-md mb-6">
+  <h2 class="text-xl font-semibold text-gray-700 text-center mb-4 flex justify-center items-center gap-2">
+    <i data-lucide="pie-chart" class="w-6 h-6 text-[var(--accent)]"></i>
+    Distribución ABC de Productos
+  </h2>
+  <canvas id="graficoABC" height="120"></canvas>
+</div>
+
+<!-- Tabla ABC -->
+<table class="w-full text-center border-collapse bg-[#FFFDF6] shadow-md rounded-xl overflow-hidden border border-[#E0DACC]">
+  <thead class="bg-[#F2ECE5]">
+    <tr>
+      <th class="px-4 py-3 border">Nombre</th>
+      <th class="px-4 py-3 border">Categoría</th>
+      <th class="px-4 py-3 border">Total Salidas</th>
+      <th class="px-4 py-3 border">Valor Consumido (S/)</th>
+      <th class="px-4 py-3 border">Clasificación</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in productos %}
+    <tr class="hover:bg-[#FAF7F2] transition duration-150">
+      <td class="px-4 py-2 border">{{ p.nombre }}</td>
+      <td class="px-4 py-2 border">{{ p.categoria }}</td>
+      <td class="px-4 py-2 border">{{ p.total_salidas or 0 }}</td>
+      <td class="px-4 py-2 border">S/ {{ '%.2f'|format(p.valor_consumido or 0) }}</td>
+      <td class="px-4 py-2 border font-semibold">
+        {% if p.clasificacion == 'A' %}
+          <span class="text-red-600">A</span>
+        {% elif p.clasificacion == 'B' %}
+          <span class="text-yellow-600">B</span>
+        {% else %}
+          <span class="text-green-600">C</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctxABC = document.getElementById('graficoABC').getContext('2d');
+  new Chart(ctxABC, {
+    type: 'doughnut',
+    data: {
+      labels: ['A (Alta importancia)', 'B (Media)', 'C (Baja)'],
+      datasets: [{
+        data: [
+          {{ abc_counts['A'] }},
+          {{ abc_counts['B'] }},
+          {{ abc_counts['C'] }}
+        ],
+        backgroundColor: ['#f87171', '#facc15', '#22c55e'],
+        borderColor: ['#ef4444', '#eab308', '#16a34a'],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const label = context.label || '';
+              const value = context.raw;
+              return `${label}: ${value} productos`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  lucide.createIcons();
+</script>
+{% endblock %}

@@ -724,6 +724,63 @@ def productos_sin_movimiento():
 
     return render_template('productos_sin_movimiento.html', productos=productos, dias=dias)
 
+@app.route('/clasificacion_abc')
+@login_required
+def clasificacion_abc():
+    cur = mysql.connection.cursor(DictCursor)
+
+    # Obtener los productos con salidas y valor consumido
+    cur.execute("""
+        SELECT p.id, p.nombre, p.categoria, SUM(h.cantidad) AS total_salidas, 
+               p.precio, SUM(h.cantidad * p.precio) AS valor_consumido
+        FROM historial_movimientos h
+        JOIN productos p ON h.producto_id = p.id
+        WHERE h.tipo_movimiento = 'Salida'
+        GROUP BY p.id
+        ORDER BY valor_consumido DESC
+    """)
+    productos = cur.fetchall()
+
+    total_valor = sum(p['valor_consumido'] or 0 for p in productos)
+
+    acumulado = 0
+    abc_counts = {'A': 0, 'B': 0, 'C': 0}  # Contadores para el gráfico
+
+    for p in productos:
+        valor = p['valor_consumido'] or 0
+        porcentaje = (valor / total_valor) * 100 if total_valor > 0 else 0
+        acumulado += porcentaje
+
+        if acumulado <= 80:
+            p['clasificacion'] = 'A'
+            abc_counts['A'] += 1
+        elif acumulado <= 95:
+            p['clasificacion'] = 'B'
+            abc_counts['B'] += 1
+        else:
+            p['clasificacion'] = 'C'
+            abc_counts['C'] += 1
+
+    cur.close()
+    return render_template('clasificacion_abc.html', productos=productos, abc_counts=abc_counts)
+
+@app.route('/sugerencias_pedido')
+@login_required
+def sugerencias_pedido():
+    cur = mysql.connection.cursor(DictCursor)
+    cur.execute("""
+        SELECT id, nombre, categoria, stock_actual, stock_optimo, stock_maximo
+        FROM productos
+        WHERE stock_actual < stock_optimo
+    """)
+    productos = cur.fetchall()
+
+    for p in productos:
+        p['cantidad_sugerida'] = p['stock_optimo'] - p['stock_actual']
+
+    cur.close()
+    return render_template('sugerencias_pedido.html', productos=productos)
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))  # Render te da el puerto
     app.run(host='0.0.0.0', port=port)

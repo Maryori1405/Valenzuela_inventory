@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Sugerencias de Pedido{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-semibold mb-6">Sugerencias Automáticas de Pedido</h1>
+
+{% if productos %}
+<table class="w-full text-center border-collapse bg-[#FFFDF6] shadow-md rounded-xl overflow-hidden border border-[#E0DACC]">
+    <thead class="bg-[#F2ECE5]">
+        <tr>
+            <th class="px-4 py-3 border">Nombre</th>
+            <th class="px-4 py-3 border">Categoría</th>
+            <th class="px-4 py-3 border">Stock Actual</th>
+            <th class="px-4 py-3 border">Stock Óptimo</th>
+            <th class="px-4 py-3 border">Sugerencia de Pedido</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in productos %}
+        <tr class="hover:bg-[#FAF7F2] transition duration-150">
+            <td class="px-4 py-2 border">{{ p.nombre }}</td>
+            <td class="px-4 py-2 border">{{ p.categoria }}</td>
+            <td class="px-4 py-2 border">{{ p.stock_actual }}</td>
+            <td class="px-4 py-2 border">{{ p.stock_optimo }}</td>
+            <td class="px-4 py-2 border font-semibold text-red-600">
+                {{ p.cantidad_sugerida }}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="text-[#6D6D6D] italic">No hay productos que requieran sugerencia de pedido en este momento.</p>
+{% endif %}
+{% endblock %}
