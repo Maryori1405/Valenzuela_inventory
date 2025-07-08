@@ -135,10 +135,6 @@ def inject_cantidad_no_leidas():
         print(f"Error en inject_cantidad_no_leidas: {e}")
         return dict(cantidad_no_leidas=0)
 
-from flask import render_template
-from flask_login import login_required
-from datetime import datetime, timedelta
-
 @app.route('/')
 @login_required
 def inicio():
@@ -148,15 +144,15 @@ def inicio():
 
     # Gráfico de estado de productos por día
     cursor.execute("""
-        SELECT DATE(fecha) AS fecha,
+        SELECT fecha,
             SUM(CASE WHEN stock_actual < stock_optimo * 0.5 THEN 1 ELSE 0 END) AS critico,
             SUM(CASE WHEN stock_actual >= stock_optimo * 0.5 AND stock_actual < stock_optimo THEN 1 ELSE 0 END) AS regular,
             SUM(CASE WHEN stock_actual >= stock_optimo AND stock_actual <= stock_maximo THEN 1 ELSE 0 END) AS optimo,
             SUM(CASE WHEN stock_actual > stock_maximo THEN 1 ELSE 0 END) AS exceso
         FROM productos
-        WHERE fecha IS NOT NULL AND DATE(fecha) BETWEEN %s AND %s
-        GROUP BY DATE(fecha)
-        ORDER BY DATE(fecha)
+        WHERE fecha BETWEEN %s AND %s
+        GROUP BY fecha
+        ORDER BY fecha
     """, (hace_7_dias, hoy))
     filas = cursor.fetchall()
 
@@ -167,10 +163,7 @@ def inicio():
     data_exceso = []
 
     for fila in filas:
-        if fila['fecha'] is not None:
-            fechas.append(fila['fecha'].strftime('%d-%m'))
-        else:
-            fechas.append("Sin fecha")
+        fechas.append(fila['fecha'].strftime('%d-%m'))
         data_critico.append(fila['critico'])
         data_regular.append(fila['regular'])
         data_optimo.append(fila['optimo'])
@@ -216,7 +209,6 @@ def agregar_producto():
         try:
             nombre = request.form['nombre']
             categoria = request.form['categoria']
-            precio_unitario = float(request.form['precio_unitario'])
             stock_actual = int(request.form['stock_actual'])
             stock_optimo = int(request.form['stock_optimo'])
             stock_maximo = int(request.form['stock_maximo'])
@@ -224,9 +216,9 @@ def agregar_producto():
             cur = mysql.connection.cursor()
 
             cur.execute("""
-                INSERT INTO productos (nombre, categoria, precio, stock_actual, stock_optimo, stock_maximo, usuario_id)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (nombre, categoria, precio, stock_actual, stock_optimo, stock_maximo, current_user.id))
+                INSERT INTO productos (nombre, categoria, stock_actual, stock_optimo, stock_maximo, usuario_id)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (nombre, categoria, stock_actual, stock_optimo, stock_maximo, current_user.id))
             mysql.connection.commit()
 
             producto_id = cur.lastrowid
@@ -740,7 +732,7 @@ def clasificacion_abc():
     # Obtener los productos con salidas y valor consumido
     cur.execute("""
         SELECT p.id, p.nombre, p.categoria, SUM(h.cantidad) AS total_salidas, 
-               p.precio_unitario, SUM(h.cantidad * p.precio_unitario) AS valor_consumido
+               p.precio_unirtario, SUM(h.cantidad * p.precio_unitario) AS valor_consumido
         FROM historial_movimientos h
         JOIN productos p ON h.producto_id = p.id
         WHERE h.tipo_movimiento = 'Salida'
