@@ -848,6 +848,40 @@ def reporte_semanal():
 
     return render_template('reporte_semanal.html', movimientos=movimientos, desde=hace_7_dias, hasta=hoy)
 
+@app.route('/reportes')
+@login_required
+def reportes():
+    cur = mysql.connection.cursor(DictCursor)
+    cur.execute("SELECT COUNT(*) AS total FROM productos")
+    total = cur.fetchone()['total']
+
+    cur.execute("SELECT COUNT(*) AS total FROM productos WHERE stock_actual < stock_optimo * 0.5")
+    criticos = cur.fetchone()['total']
+
+    cur.execute("SELECT COUNT(*) AS total FROM productos WHERE stock_actual >= stock_optimo * 0.5 AND stock_actual < stock_optimo")
+    regulares = cur.fetchone()['total']
+
+    cur.execute("SELECT COUNT(*) AS total FROM productos WHERE stock_actual >= stock_optimo AND stock_actual <= stock_maximo")
+    optimos = cur.fetchone()['total']
+
+    return render_template('reportes.html',
+                           total_productos=total,
+                           total_criticos=criticos,
+                           total_regulares=regulares,
+                           total_optimos=optimos)
+
+@app.route('/exportar_excel')
+@login_required
+def exportar_excel():
+    # lógica para generar y descargar el archivo Excel
+    pass
+
+@app.route('/exportar_pdf')
+@login_required
+def exportar_pdf():
+    # lógica para generar y descargar el PDF
+    pass
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))  # Render te da el puerto
     app.run(host='0.0.0.0', port=port)

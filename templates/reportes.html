@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Reportes | Inventario{% endblock %}
+
+{% block content %}
+<div class="p-6 space-y-6">
+
+  <!-- Título principal -->
+  <h1 class="text-3xl font-semibold text-gray-800 flex items-center gap-2">
+    <i data-lucide="file-bar-chart" class="w-7 h-7 text-blue-600"></i>
+    Reportes del Inventario
+  </h1>
+
+  <!-- Acciones de exportación -->
+  <div class="bg-white p-6 rounded-xl shadow-lg space-y-4">
+    <h2 class="text-xl font-medium text-gray-700">Exportar Reportes</h2>
+    <div class="flex flex-col sm:flex-row sm:gap-4 gap-2">
+      <a href="{{ url_for('exportar_excel') }}"
+         class="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition text-sm flex items-center gap-2 w-fit">
+        <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+        Descargar Excel
+      </a>
+
+      <a href="{{ url_for('exportar_pdf') }}"
+         class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition text-sm flex items-center gap-2 w-fit">
+        <i data-lucide="file-text" class="w-5 h-5"></i>
+        Descargar PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- Estadísticas avanzadas -->
+  <div class="bg-white p-6 rounded-xl shadow-lg space-y-4">
+    <h2 class="text-xl font-medium text-gray-700">Estadísticas Generales</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-gray-100 p-4 rounded-lg text-center">
+        <p class="text-sm text-gray-500">Total de Productos</p>
+        <p class="text-2xl font-semibold text-gray-700">{{ total_productos }}</p>
+      </div>
+      <div class="bg-red-100 p-4 rounded-lg text-center">
+        <p class="text-sm text-red-700">Críticos</p>
+        <p class="text-2xl font-semibold text-red-700">{{ total_criticos }}</p>
+      </div>
+      <div class="bg-yellow-100 p-4 rounded-lg text-center">
+        <p class="text-sm text-yellow-700">Regulares</p>
+        <p class="text-2xl font-semibold text-yellow-700">{{ total_regulares }}</p>
+      </div>
+      <div class="bg-green-100 p-4 rounded-lg text-center">
+        <p class="text-sm text-green-700">Óptimos</p>
+        <p class="text-2xl font-semibold text-green-700">{{ total_optimos }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enlace de retorno -->
+  <div class="flex justify-end mt-6">
+    <a href="{{ url_for('inicio') }}" class="text-sm text-blue-600 hover:underline">
+      ← Volver al Dashboard
+    </a>
+  </div>
+</div>
+
+<script>
+  lucide.createIcons();
+</script>
+{% endblock %}
