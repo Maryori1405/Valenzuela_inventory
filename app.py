@@ -167,7 +167,10 @@ def inicio():
     data_exceso = []
 
     for fila in filas:
-        fechas.append(fila['fecha'].strftime('%d-%m'))
+        if fila['fecha'] is not None:
+            fechas.append(fila['fecha'].strftime('%d-%m'))
+        else:
+            fechas.append("Sin fecha")
         data_critico.append(fila['critico'])
         data_regular.append(fila['regular'])
         data_optimo.append(fila['optimo'])
