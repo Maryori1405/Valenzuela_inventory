@@ -731,7 +731,7 @@ def clasificacion_abc():
     # Obtener los productos con salidas y valor consumido
     cur.execute("""
         SELECT p.id, p.nombre, p.categoria, SUM(h.cantidad) AS total_salidas, 
-               p.precio_unitario, SUM(h.cantidad * p.precio_unitario) AS valor_consumido
+               p.precio, SUM(h.cantidad * p.precio) AS valor_consumido
         FROM historial_movimientos h
         JOIN productos p ON h.producto_id = p.id
         WHERE h.tipo_movimiento = 'Salida'
