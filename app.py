@@ -563,16 +563,16 @@ def historial():
     hasta = request.args.get('hasta')
 
     cur = mysql.connection.cursor(DictCursor)
-    cur.execute("SET time_zone = '-05:00'")  # Asegura la zona horaria en la sesión
+    cur.execute("SET time_zone = '-05:00'")  # Asegura la zona horaria
 
     query = """
         SELECT 
             CONVERT_TZ(h.fecha_hora, '+00:00', '-05:00') AS fecha_hora_local,
             h.*, 
-            p.nombre AS nombre_producto, 
+            COALESCE(p.nombre, 'Producto eliminado') AS nombre_producto,
             u.username AS usuario
         FROM historial_movimientos h
-        JOIN productos p ON h.producto_id = p.id
+        LEFT JOIN productos p ON h.producto_id = p.id
         LEFT JOIN usuarios u ON h.usuario_id = u.id
         WHERE 1 = 1
     """
@@ -591,6 +591,7 @@ def historial():
         valores.append(hasta + " 23:59:59")
 
     query += " ORDER BY h.fecha_hora DESC"
+
     cur.execute(query, valores)
     movimientos = cur.fetchall()
     cur.close()

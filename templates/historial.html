@@ -14,6 +14,7 @@
                 <option value="">Todos</option>
                 <option value="entrada" {% if request.args.get('tipo') == 'entrada' %}selected{% endif %}>Entrada</option>
                 <option value="salida" {% if request.args.get('tipo') == 'salida' %}selected{% endif %}>Salida</option>
+                <option value="eliminación" {% if request.args.get('tipo') == 'eliminación' %}selected{% endif %}>Eliminación</option>
             </select>
         </div>
 
@@ -33,6 +34,9 @@
                 class="bg-[var(--primary)] hover:bg-[var(--accent)] text-white px-5 py-2 rounded shadow text-sm font-semibold transition">
             Filtrar
         </button>
+
+        <a href="{{ url_for('historial') }}"
+           class="text-sm text-gray-600 underline mt-2">Limpiar filtros</a>
     </form>
 
     <!-- Tabla de resultados -->
@@ -53,7 +57,17 @@
                 <tr class="hover:bg-[var(--soft)] transition">
                     <td class="px-4 py-2">{{ movimiento.id }}</td>
                     <td class="px-4 py-2">{{ movimiento.nombre_producto }}</td>
-                    <td class="px-4 py-2 capitalize">{{ movimiento.tipo_movimiento }}</td>
+                    <td class="px-4 py-2 capitalize font-semibold
+                        {% if movimiento.tipo_movimiento == 'entrada' %}
+                            text-green-600
+                        {% elif movimiento.tipo_movimiento == 'salida' %}
+                            text-yellow-600
+                        {% elif movimiento.tipo_movimiento == 'eliminación' %}
+                            text-red-600
+                        {% endif %}
+                    ">
+                        {{ movimiento.tipo_movimiento }}
+                    </td>
                     <td class="px-4 py-2">{{ movimiento.cantidad }}</td>
                     <td class="px-4 py-2">{{ movimiento.fecha_hora_local.strftime('%d-%m-%Y %H:%M:%S') }}</td>
                     <td class="px-4 py-2">{{ movimiento.usuario or 'N/A' }}</td>
