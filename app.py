@@ -163,11 +163,12 @@ def inicio():
     data_exceso = []
 
     for fila in filas:
-        fechas.append(fila['fecha'].strftime('%d-%m'))
-        data_critico.append(fila['critico'])
-        data_regular.append(fila['regular'])
-        data_optimo.append(fila['optimo'])
-        data_exceso.append(fila['exceso'])
+        if fila['fecha']:
+            fechas.append(fila['fecha'].strftime('%d-%m'))
+            data_critico.append(fila['critico'])
+            data_regular.append(fila['regular'])
+            data_optimo.append(fila['optimo'])
+            data_exceso.append(fila['exceso'])
 
     # Tarjetas resumen
     cursor.execute("SELECT COUNT(*) AS total FROM productos")
