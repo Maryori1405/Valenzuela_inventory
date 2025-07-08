@@ -33,6 +33,10 @@
                 {% if producto.stock_actual >= producto.stock_maximo %}disabled{% endif %}>
             Registrar Entrada
         </button>
+        <a href="{{ url_for('productos') }}"
+           class="text-[var(--text)] hover:underline hover:text-[var(--primary)] transition font-medium">
+            Cancelar
+        </a>
     </form>
 </div>
 {% endblock %}

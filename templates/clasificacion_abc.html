@@ -3,6 +3,14 @@
 {% block title %}Clasificación ABC{% endblock %}
 
 {% block content %}
+<!-- Botón de regresar -->
+<div class="mb-4">
+  <button onclick="window.history.back()" class="flex items-center gap-2 text-sm text-gray-600 hover:text-[var(--accent)] transition">
+    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    Volver
+  </button>
+</div>
+
 <h1 class="text-3xl font-semibold mb-6">Clasificación ABC de Productos</h1>
 
 <!-- Gráfico de torta ABC -->
@@ -12,7 +20,7 @@
       <i data-lucide="pie-chart" class="w-5 h-5 text-[var(--accent)]"></i>
       Distribución ABC de Productos
     </h2>
-    <canvas id="graficoABC" width="200" height="200"></canvas>
+    <canvas id="graficoABC" width="220" height="220"></canvas>
   </div>
 </div>
 

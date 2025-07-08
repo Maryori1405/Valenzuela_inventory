@@ -3,6 +3,14 @@
 {% block title %}Sugerencias de Pedido{% endblock %}
 
 {% block content %}
+<!-- Botón de regresar -->
+<div class="mb-4">
+  <button onclick="window.history.back()" class="flex items-center gap-2 text-sm text-gray-600 hover:text-[var(--accent)] transition">
+    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    Volver
+  </button>
+</div>
+
 <h1 class="text-3xl font-semibold mb-6">Sugerencias Automáticas de Pedido</h1>
 
 {% if productos %}
