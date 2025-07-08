@@ -3,8 +3,6 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from datetime import datetime, timedelta
 from sklearn.linear_model import LinearRegression
-import io, base64, unicodedata, matplotlib
-import matplotlib.pyplot as plt
 from pymysql.cursors import DictCursor
 from MySQLdb.cursors import DictCursor
 from dotenv import load_dotenv
@@ -12,25 +10,30 @@ from db import init_db, mysql  # mysql ya se importa aquí, NO volver a crearlo
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Image
-import pandas as pd
 from flask import send_file
+from xhtml2pdf import pisa
+from io import BytesIO
+from flask import make_response, render_template
+import io, base64, unicodedata, matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import os
 
 # Usar backend sin GUI para matplotlib (útil en servidores sin entorno gráfico)
 matplotlib.use('Agg')
 
-# ✅ Cargar variables de entorno desde .env
+# Cargar variables de entorno desde .env
 load_dotenv()
 
-# ✅ Inicializar la aplicación Flask
+# Inicializar la aplicación Flask
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'clave_por_defecto_insegura')
 
-# ✅ Inicializar la base de datos (usa configuración desde .env y db.py)
+# Inicializar la base de datos (usa configuración desde .env y db.py)
 init_db(app)
 
-# ✅ Inicializar extensiones
+# Inicializar extensiones
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'  # Redirige al login si no está autenticado
@@ -206,6 +209,7 @@ def inicio():
                            total_productos=total_productos,
                            total_criticos=total_criticos,
                            productos_criticos=productos_criticos)
+
 @app.route('/agregar_producto', methods=['GET', 'POST'])
 @login_required
 def agregar_producto():
@@ -217,8 +221,17 @@ def agregar_producto():
             stock_optimo = int(request.form['stock_optimo'])
             stock_maximo = int(request.form['stock_maximo'])
 
-            cur = mysql.connection.cursor()
+            cur = mysql.connection.cursor(DictCursor)
 
+            # Validar nombre único
+            cur.execute("SELECT id FROM productos WHERE nombre = %s", (nombre,))
+            producto_existente = cur.fetchone()
+
+            if producto_existente:
+                flash('⚠️ Ya existe un producto con ese nombre.', 'warning')
+                return render_template('agregar_producto.html')
+
+            # Insertar producto
             cur.execute("""
                 INSERT INTO productos (nombre, categoria, stock_actual, stock_optimo, stock_maximo, usuario_id)
                 VALUES (%s, %s, %s, %s, %s, %s)
@@ -227,6 +240,7 @@ def agregar_producto():
 
             producto_id = cur.lastrowid
 
+            # Registrar entrada inicial si hay stock
             if stock_actual > 0:
                 cur.execute("""
                     INSERT INTO historial_movimientos (producto_id, tipo_movimiento, cantidad, fecha_hora, usuario_id)
@@ -377,7 +391,7 @@ def eliminar(id):
     cur.execute("SELECT stock_actual FROM productos WHERE id=%s", (id,))
     producto = cur.fetchone()
     if producto:
-        stock_actual = int(producto[0])
+        stock_actual = int(producto['stock_actual'])
         if stock_actual > 0:
             cur.execute("""
                 INSERT INTO historial_movimientos (producto_id, tipo_movimiento, cantidad, fecha_hora, usuario_id)
@@ -420,7 +434,6 @@ def notificaciones():
         })
 
     return render_template('notificaciones.html', notificaciones=notificaciones)
-#apartado de la prediccion
 
 @app.route('/prediccion')
 @login_required
@@ -919,10 +932,6 @@ def exportar_pdf():
         os.remove(grafico_ventas_path)
 
     return send_file(buffer, download_name="reporte_general.pdf", as_attachment=True)
-
-from xhtml2pdf import pisa
-from io import BytesIO
-from flask import make_response, render_template
 
 @app.route('/exportar_productos_pdf')
 @login_required
