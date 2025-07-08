@@ -13,6 +13,7 @@
             <input type="number" name="cantidad" min="1" max="{{ producto.stock_actual }}" required
                    class="w-full mt-1 px-4 py-2 border border-gray-300 rounded shadow-sm">
         </div>
+        <div class="flex justify-between items-center pt-4">
         <button type="submit"
                 class="bg-[var(--primary)] hover:bg-[var(--accent)] text-white px-5 py-2 rounded shadow text-sm font-semibold transition">
             Registrar Salida
@@ -21,6 +22,7 @@
            class="text-[var(--text)] hover:underline hover:text-[var(--primary)] transition font-medium">
             Cancelar
         </a>
+        </div>
     </form>
 </div>
 {% endblock %}
