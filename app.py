@@ -810,10 +810,12 @@ def reportes():
 @app.route('/exportar_pdf')
 @login_required
 def exportar_pdf():
-    # Obtener datos del inventario
+    import tempfile
+
+    # Conexión y datos
     cur = mysql.connection.cursor(DictCursor)
 
-    # Conteo de estados del inventario
+    # Estado del inventario
     cur.execute("SELECT COUNT(*) AS total FROM productos")
     total = cur.fetchone()['total']
 
@@ -826,7 +828,7 @@ def exportar_pdf():
     cur.execute("SELECT COUNT(*) AS total FROM productos WHERE stock_actual >= stock_optimo AND stock_actual <= stock_maximo")
     optimos = cur.fetchone()['total']
 
-    # Consumo estimado: rendimiento de productos (ventas)
+    # Ventas por producto
     cur.execute("""
         SELECT p.nombre, SUM(CASE WHEN h.tipo_movimiento = 'Salida' THEN h.cantidad ELSE 0 END) AS total_vendido
         FROM productos p
@@ -836,29 +838,39 @@ def exportar_pdf():
     ventas = cur.fetchall()
     cur.close()
 
-    # 🎯 Generar gráfico 1: barras (estado del inventario)
-    plt.figure(figsize=(6, 4))
+    # 🎨 Gráfico 1: Estado del Inventario
+    plt.figure(figsize=(7, 4))
     estados = ['Críticos', 'Regulares', 'Óptimos']
     cantidades = [criticos, regulares, optimos]
-    colores = ['red', 'orange', 'green']
-    plt.bar(estados, cantidades, color=colores)
-    plt.title('Estado del Inventario')
-    plt.ylabel('Cantidad')
+    colores = ['#dc2626', '#facc15', '#16a34a']  # rojo, amarillo, verde
+
+    bars = plt.bar(estados, cantidades, color=colores)
+    plt.title('Estado del Inventario', fontsize=14)
+    plt.ylabel('Cantidad', fontsize=12)
+    plt.xticks(fontsize=10)
+    plt.yticks(fontsize=10)
+    plt.grid(axis='y', linestyle='--', alpha=0.4)
+
+    for bar in bars:
+        yval = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2, yval + 0.3, int(yval), ha='center', fontsize=10)
+
     plt.tight_layout()
-    grafico_path = 'grafico_estado.png'
-    plt.savefig(grafico_path)
+    grafico_estado_path = tempfile.mktemp(suffix='.png')
+    plt.savefig(grafico_estado_path, dpi=150)
     plt.close()
 
-    # 🎯 Gráfico 2: ventas por producto (pastel)
+    # 🎨 Gráfico 2: Ventas por Producto
     nombres = [v['nombre'] for v in ventas if v['total_vendido'] > 0]
     totales = [v['total_vendido'] for v in ventas if v['total_vendido'] > 0]
 
     if nombres:
         plt.figure(figsize=(6, 6))
-        plt.pie(totales, labels=nombres, autopct='%1.1f%%', startangle=140)
-        plt.title('Ventas por Producto')
-        grafico_ventas_path = 'grafico_ventas.png'
-        plt.savefig(grafico_ventas_path)
+        plt.pie(totales, labels=nombres, autopct='%1.1f%%', startangle=140, textprops={'fontsize': 9})
+        plt.title('Distribución de Ventas por Producto', fontsize=14)
+        plt.tight_layout()
+        grafico_ventas_path = tempfile.mktemp(suffix='.png')
+        plt.savefig(grafico_ventas_path, dpi=150)
         plt.close()
     else:
         grafico_ventas_path = None
@@ -870,37 +882,39 @@ def exportar_pdf():
     y = height - 50
 
     pdf.setFont("Helvetica-Bold", 16)
-    pdf.drawString(50, y, "📊 Reporte de Inventario")
+    pdf.drawString(50, y, "📊 Reporte General de Inventario")
     y -= 30
 
     pdf.setFont("Helvetica", 12)
     pdf.drawString(50, y, f"Total de productos: {total}")
     y -= 20
-    pdf.drawString(50, y, f"Productos críticos: {criticos}")
+    pdf.drawString(50, y, f"Productos críticos (stock < 50%): {criticos}")
     y -= 20
-    pdf.drawString(50, y, f"Productos regulares: {regulares}")
+    pdf.drawString(50, y, f"Productos regulares (entre 50% y óptimo): {regulares}")
     y -= 20
-    pdf.drawString(50, y, f"Productos óptimos: {optimos}")
+    pdf.drawString(50, y, f"Productos óptimos (>= óptimo): {optimos}")
     y -= 30
 
-    # 📎 Insertar gráfico 1
-    pdf.drawString(50, y, "Gráfico de Estado del Inventario:")
-    y -= 200
-    pdf.drawImage(grafico_path, 50, y, width=500, height=180)
+    # 📎 Gráfico: Estado del Inventario
+    pdf.drawString(50, y, "📌 Estado actual del inventario:")
+    y -= 10
+    pdf.drawImage(grafico_estado_path, 70, y - 200, width=460, height=180)
+    y -= 220
 
+    # 📈 Gráfico: Ventas por Producto
     if grafico_ventas_path:
         pdf.showPage()
         y = height - 50
         pdf.setFont("Helvetica-Bold", 14)
-        pdf.drawString(50, y, "📈 Ventas por Producto")
-        y -= 200
-        pdf.drawImage(grafico_ventas_path, 50, y, width=500, height=180)
+        pdf.drawString(50, y, "📈 Rendimiento por Ventas de Producto")
+        y -= 10
+        pdf.drawImage(grafico_ventas_path, 70, y - 400, width=460, height=360)
 
     pdf.save()
     buffer.seek(0)
 
-    # Opcional: eliminar imágenes temporales si se desea
-    os.remove(grafico_path)
+    # 🧹 Limpiar imágenes temporales
+    os.remove(grafico_estado_path)
     if grafico_ventas_path:
         os.remove(grafico_ventas_path)
 
