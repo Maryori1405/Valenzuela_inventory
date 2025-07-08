@@ -947,7 +947,7 @@ def exportar_productos_pdf():
 
     response = make_response(result.getvalue())
     response.headers["Content-Type"] = "application/pdf"
-    response.headers["Content-Disposition"] = "inline; filename=productos.pdf"
+    response.headers["Content-Disposition"] = "attachment; filename=productos.pdf"
     return response
 
 if __name__ == '__main__':
