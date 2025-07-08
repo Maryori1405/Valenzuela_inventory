@@ -135,6 +135,10 @@ def inject_cantidad_no_leidas():
         print(f"Error en inject_cantidad_no_leidas: {e}")
         return dict(cantidad_no_leidas=0)
 
+from flask import render_template
+from flask_login import login_required
+from datetime import datetime, timedelta
+
 @app.route('/')
 @login_required
 def inicio():
@@ -144,15 +148,15 @@ def inicio():
 
     # Gráfico de estado de productos por día
     cursor.execute("""
-        SELECT fecha,
+        SELECT DATE(fecha) AS fecha,
             SUM(CASE WHEN stock_actual < stock_optimo * 0.5 THEN 1 ELSE 0 END) AS critico,
             SUM(CASE WHEN stock_actual >= stock_optimo * 0.5 AND stock_actual < stock_optimo THEN 1 ELSE 0 END) AS regular,
             SUM(CASE WHEN stock_actual >= stock_optimo AND stock_actual <= stock_maximo THEN 1 ELSE 0 END) AS optimo,
             SUM(CASE WHEN stock_actual > stock_maximo THEN 1 ELSE 0 END) AS exceso
         FROM productos
-        WHERE fecha BETWEEN %s AND %s
-        GROUP BY fecha
-        ORDER BY fecha
+        WHERE fecha IS NOT NULL AND DATE(fecha) BETWEEN %s AND %s
+        GROUP BY DATE(fecha)
+        ORDER BY DATE(fecha)
     """, (hace_7_dias, hoy))
     filas = cursor.fetchall()
 
