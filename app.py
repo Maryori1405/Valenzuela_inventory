@@ -920,6 +920,36 @@ def exportar_pdf():
 
     return send_file(buffer, download_name="reporte_general.pdf", as_attachment=True)
 
+from xhtml2pdf import pisa
+from io import BytesIO
+from flask import make_response, render_template
+
+@app.route('/exportar_productos_pdf')
+@login_required
+def exportar_productos_pdf():
+    cur = mysql.connection.cursor(DictCursor)
+    cur.execute("""SELECT *, CASE
+        WHEN stock_actual < stock_optimo * 0.5 THEN 'Crítico'
+        WHEN stock_actual < stock_optimo THEN 'Regular'
+        WHEN stock_actual <= stock_maximo THEN 'Óptimo'
+        ELSE 'Exceso' END AS estado
+        FROM productos
+    """)
+    productos = cur.fetchall()
+
+    html = render_template("pdf_productos.html", productos=productos)
+
+    result = BytesIO()
+    pisa_status = pisa.CreatePDF(html, dest=result)
+
+    if pisa_status.err:
+        return "❌ Error al generar PDF", 500
+
+    response = make_response(result.getvalue())
+    response.headers["Content-Type"] = "application/pdf"
+    response.headers["Content-Disposition"] = "inline; filename=productos.pdf"
+    return response
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))  # Render te da el puerto
     app.run(host='0.0.0.0', port=port)

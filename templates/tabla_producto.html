@@ -90,12 +90,18 @@
   </table>
 </div>
 
-<div class="flex justify-between pt-4">
+<div class="flex justify-between items-center pt-4">
     <a href="{{ url_for('agregar_producto') }}"
        class="flex items-center gap-2 bg-[var(--primary)] hover:bg-[var(--accent)] text-white font-semibold px-6 py-2 rounded-lg shadow-sm transition">
         <i data-lucide="plus-circle" class="w-5 h-5"></i>
         Agregar Nuevo Producto
     </a>
+    <a href="{{ url_for('exportar_productos_pdf') }}"
+   class="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm transition">
+    <i data-lucide="file-text" class="w-5 h-5"></i>
+    Exportar a PDF
+</a>
+
 </div>
 
 {% endblock %}
